@@ -58,7 +58,7 @@ sf sgai metadata analyze --model gpt-4o-mini
 ## Requirements
 
 - `sf` CLI installed
-- Node.js 18 or later
+- Node.js 20 or later
 - A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root
 - Optional: `OPENAI_API_KEY` environment variable for AI-generated summaries
 
