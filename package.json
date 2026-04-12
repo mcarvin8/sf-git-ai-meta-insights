@@ -6,7 +6,7 @@
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
     "@salesforce/sf-plugins-core": "^12",
-    "openai": "^5.0.0",
+    "openai": "^6.34.0",
     "simple-git": "^3.20.0"
   },
   "devDependencies": {
