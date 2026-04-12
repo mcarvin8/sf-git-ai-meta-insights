@@ -63,7 +63,7 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD --model gpt-4o-mini
 - A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root
 - Optional: LLM configuration (see below)
 
-This plugin depends on running inside an SFDX project because it reads `packageDirectories` from `sfdx-project.json`.
+This plugin depends on running inside an SFDX project because it reads `packageDirectories` from `sfdx-project.json` to determine which metadata files from the git diff to include in the summary.
 
 If no LLM gateway is configured, the plugin still generates a local fallback summary.
 
@@ -91,8 +91,6 @@ $env:LLM_BASE_URL = "https://llm-gateway.mycompany.example/v1"
 $env:LLM_DEFAULT_HEADERS = '{"Authorization":"Bearer <token>","x-tenant-id":"salesforce"}'
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
-
-If you use a **linked** copy of this plugin, run `yarn compile` (or `yarn build`) in the plugin repo after changing `src/` so `sf` picks up the updated `lib/` output.
 
 ### OpenAI (api.openai.com)
 
