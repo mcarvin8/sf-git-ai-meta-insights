@@ -41,9 +41,9 @@ Diff:\n${diffText}`;
       flags.model ?? 'gpt-4o-mini',
       openAiClientProvider ??
         /* istanbul ignore next */ (async (): Promise<OpenAiClient> => {
-          const { default: OpenAI } = await import('openai');
-          return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        })
+        const { default: OpenAI } = await import('openai');
+        return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      })
     );
   }
 
@@ -91,7 +91,7 @@ async function callOpenAi(prompt: string, model: string, openAiClientProvider: O
       },
     ],
     temperature: 0.2,
-    max_tokens: 1000,
+    'max_tokens': 1000,
   });
 
   const typedResponse = response as {
