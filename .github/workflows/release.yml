@@ -42,7 +42,5 @@ jobs:
         if: ${{ steps.release.outputs.release_created == 'true' }}
 
       - name: Publish to NPM
-        run: npm publish --access public --tag latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: NODE_AUTH_TOKEN="" npm publish --access public --tag latest --provenance
         if: ${{ steps.release.outputs.release_created == 'true' }}
