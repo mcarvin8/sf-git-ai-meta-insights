@@ -53,6 +53,11 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       required: false,
       default: 'gpt-4o-mini',
     }),
+    'max-diff-chars': Flags.integer({
+      summary: messages.getMessage('flags.max-diff-chars.summary'),
+      description: messages.getMessage('flags.max-diff-chars.description'),
+      required: false,
+    }),
     'ignore-package-directory': Flags.directory({
       summary: messages.getMessage('flags.ignore-package-directory.summary'),
       description: messages.getMessage('flags.ignore-package-directory.description'),
@@ -64,6 +69,14 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
 
   public async run(): Promise<SgaiMetadataSummarizeResult> {
     const { flags } = await this.parse(SgaiMetadataSummarize);
+
+    const maxDiffCharsFlag = flags['max-diff-chars'];
+    if (maxDiffCharsFlag !== undefined && (maxDiffCharsFlag < 5000 || maxDiffCharsFlag > 5_000_000)) {
+      throw new SfError(
+        `--max-diff-chars must be between 5000 and 5,000,000 (received ${maxDiffCharsFlag}).`,
+        'InvalidMaxDiffChars'
+      );
+    }
 
     const from = flags.from;
     const to = flags.to ?? 'HEAD';
@@ -116,6 +129,7 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       messageFilter: flags['message-filter'],
       model: flags.model,
       team: flags.team,
+      maxDiffChars: maxDiffCharsFlag,
     });
 
     await writeFile(outputPath, summary, 'utf8');

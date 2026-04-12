@@ -62,6 +62,14 @@ Package directories to ignore when generating the diff.
 
 Specify one or more package directories to exclude from the generated diff. This flag can be provided multiple times.
 
+# flags.max-diff-chars.summary
+
+Maximum size of the unified diff sent to the LLM (characters).
+
+# flags.max-diff-chars.description
+
+Large metadata diffs can exceed the model context window. The plugin sends at most this many characters of the unified diff (plus a fixed preamble). Allowed range is 5000 through 5000000 when set. Defaults to a conservative limit when unset; override with `LLM_MAX_DIFF_CHARS` or this flag. Only increase if your model and gateway support a larger context.
+
 # examples
 
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --message-filter "(feature|fix)" --output changes.md

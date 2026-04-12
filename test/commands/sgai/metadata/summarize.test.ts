@@ -2,11 +2,15 @@ import { writeFile, mkdir, rm, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { SimpleGit } from 'simple-git';
-import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, afterAll, beforeEach } from '@jest/globals';
 
 /* eslint-disable @typescript-eslint/unbound-method */
 import pluginIndex from '../../../../src/index.js';
-import { generateSummary } from '../../../../src/ai/metadataSummary.js';
+import {
+  generateSummary,
+  resolveLlmMaxDiffChars,
+  truncateUnifiedDiffForLlm,
+} from '../../../../src/ai/metadataSummary.js';
 import {
   createGitClient,
   getCommits,
@@ -19,6 +23,19 @@ import {
 const repoRoot = process.cwd();
 
 describe('sgai metadata summary generator', () => {
+  beforeEach(() => {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.LLM_API_KEY;
+    delete process.env.LLM_BASE_URL;
+    delete process.env.OPENAI_BASE_URL;
+    delete process.env.LLM_DEFAULT_HEADERS;
+    delete process.env.OPENAI_DEFAULT_HEADERS;
+    delete process.env.LLM_MAX_TOKENS;
+    delete process.env.OPENAI_MAX_TOKENS;
+    delete process.env.LLM_MAX_DIFF_CHARS;
+    delete process.env.METADATA_AUDIT_TEAM;
+  });
+
   it('generates a fallback summary without an OPENAI key', async () => {
     const diffText = 'diff --git a/foo b/foo\nindex 123..456';
     const fileNames = ['force-app/main/default/classes/AccountProfile.cls'];
@@ -54,6 +71,38 @@ describe('sgai metadata summary generator', () => {
     expect(summary).toContain('Fix bug in metadata analyzer');
   });
 
+  it('truncates oversized diff for the LLM using LLM_MAX_DIFF_CHARS', async () => {
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'truncated ok' } }],
+    }));
+
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.LLM_MAX_DIFF_CHARS = '20000';
+    const hugeDiff = `diff --git a/x b/x\n${'y'.repeat(50_000)}`;
+
+    await generateSummary(hugeDiff, [], [{ hash: 'a', message: 'm' }], { from: 'HEAD~1' }, async () => ({
+      chat: { completions: { create: openAiCreate } },
+    }));
+
+    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
+    const userMsg = calls[0][0].messages[1]?.content ?? '';
+    expect(userMsg).toContain('TRUNCATED:');
+    expect(userMsg.length).toBeLessThan(hugeDiff.length + 5000);
+
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('resolveLlmMaxDiffChars prefers CLI override over env', () => {
+    process.env.LLM_MAX_DIFF_CHARS = '5000';
+    expect(resolveLlmMaxDiffChars(99_000)).toBe(99_000);
+    delete process.env.LLM_MAX_DIFF_CHARS;
+    expect(resolveLlmMaxDiffChars(undefined)).toBe(120_000);
+  });
+
+  it('truncateUnifiedDiffForLlm leaves short diffs unchanged', () => {
+    expect(truncateUnifiedDiffForLlm('small', 100)).toBe('small');
+  });
+
   it('uses OpenAI when OPENAI_API_KEY is available', async () => {
     const openAiCreate = jest.fn(async () => ({
       choices: [{ message: { content: 'AI generated summary' } }],
@@ -80,6 +129,27 @@ describe('sgai metadata summary generator', () => {
     delete process.env.OPENAI_API_KEY;
   });
 
+  it('uses LLM path when only LLM_BASE_URL is set (no OPENAI_API_KEY)', async () => {
+    process.env.LLM_BASE_URL = 'http://gateway.example.invalid';
+
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'LLM-gated summary' } }],
+    }));
+
+    const summary = await generateSummary(
+      'diff --git a/b b/b\n',
+      [],
+      [{ hash: 'abcdef1234567890', message: 'm' }],
+      { from: 'HEAD~1' },
+      async () => ({
+        chat: { completions: { create: openAiCreate } },
+      })
+    );
+
+    expect(summary).toContain('LLM-gated summary');
+    expect(openAiCreate).toHaveBeenCalled();
+  });
+
   it('includes Team in the OpenAI user message when --team is set', async () => {
     const openAiCreate = jest.fn(async () => ({
       choices: [{ message: { content: 'ok' } }],
@@ -99,6 +169,7 @@ describe('sgai metadata summary generator', () => {
   });
 
   it('includes Team section in fallback summary when team flag is set', async () => {
+    delete process.env.OPENAI_API_KEY;
     const summary = await generateSummary('diff', [], [{ hash: 'a', message: 'm' }], {
       from: 'HEAD~1',
       team: 'Revenue Cloud',
@@ -107,6 +178,7 @@ describe('sgai metadata summary generator', () => {
   });
 
   it('includes Team in fallback from METADATA_AUDIT_TEAM when flag unset', async () => {
+    delete process.env.OPENAI_API_KEY;
     process.env.METADATA_AUDIT_TEAM = '  CI Team  ';
     const summary = await generateSummary('diff', [], [{ hash: 'a', message: 'm' }], { from: 'HEAD~1' });
     expect(summary).toContain('## Team\nCI Team');
@@ -397,6 +469,86 @@ describe('sgai metadata summary generator', () => {
       expect(result).toBe('');
       expect(git.diff).not.toHaveBeenCalled();
     });
+    it('uses dot package path when package directory is the repo root', async () => {
+      const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-dotpkg-'));
+
+      await writeFile(
+        join(tmpRoot, 'sfdx-project.json'),
+        JSON.stringify({
+          packageDirectories: [{ path: '.' }],
+        }),
+        'utf8'
+      );
+
+      const git = {
+        diff: jest.fn(async (args: string[]) => `diff-args:${args.join('|')}`),
+        revparse: jest.fn(async () => tmpRoot),
+      } as unknown as SimpleGit;
+
+      await getDiff(git, 'a', 'b', [], false, undefined, tmpRoot);
+
+      expect(git.diff).toHaveBeenCalled();
+      const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
+      expect(callArgs).toContain('.');
+
+      await rm(tmpRoot, { recursive: true, force: true });
+    });
+
+    it('accepts string entries in packageDirectories', async () => {
+      const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-str-pkg-'));
+
+      await mkdir(join(tmpRoot, 'legacy-pkg'), { recursive: true });
+
+      await writeFile(
+        join(tmpRoot, 'sfdx-project.json'),
+        JSON.stringify({
+          packageDirectories: ['legacy-pkg'],
+        }),
+        'utf8'
+      );
+
+      const git = {
+        diff: jest.fn(async () => 'ok'),
+        revparse: jest.fn(async () => '/SHOULD-NOT-RUN'),
+      } as unknown as SimpleGit;
+
+      await getDiff(git, 'x', 'y', [], false, undefined, tmpRoot);
+
+      expect(git.revparse).not.toHaveBeenCalled();
+      const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
+      expect(callArgs).toContain('legacy-pkg');
+
+      await rm(tmpRoot, { recursive: true, force: true });
+    });
+
+    it('filters empty and invalid package directory entries from sfdx-project.json', async () => {
+      const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-mixed-pkg-'));
+
+      await mkdir(join(tmpRoot, 'force-app'), { recursive: true });
+      await mkdir(join(tmpRoot, 'extra-pkg'), { recursive: true });
+
+      await writeFile(
+        join(tmpRoot, 'sfdx-project.json'),
+        JSON.stringify({
+          packageDirectories: [{ path: '' }, { path: 'force-app' }, {}, 'extra-pkg', { path: '   ' }],
+        }),
+        'utf8'
+      );
+
+      const git = {
+        diff: jest.fn(async () => 'ok'),
+        revparse: jest.fn(async () => tmpRoot),
+      } as unknown as SimpleGit;
+
+      await getDiff(git, 'x', 'y', [], false, undefined, tmpRoot);
+
+      const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
+      expect(callArgs).toContain('force-app');
+      expect(callArgs).toContain('extra-pkg');
+
+      await rm(tmpRoot, { recursive: true, force: true });
+    });
+
     it('getDiff aggregates multiple commit patches correctly', async () => {
       const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-'));
 
