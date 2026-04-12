@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v1.1.0...v1.1.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* **git:** merge numstat and name-status for structured diff summaries ([cd938ed](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/cd938ed196442c019d8286ee4bea334c57f9ab7d))
+
 ## [1.1.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v1.0.0...v1.1.0) (2026-04-12)
 
 

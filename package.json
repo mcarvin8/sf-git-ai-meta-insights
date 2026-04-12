@@ -1,7 +1,7 @@
 {
   "name": "sf-git-ai-meta-insights",
   "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "dependencies": {
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
