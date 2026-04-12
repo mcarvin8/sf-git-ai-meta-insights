@@ -119,14 +119,32 @@ export async function getDiffSummary(
   const { specs } = ctx;
 
   if (!filterByCommits) {
-    const output = await git.diff(['--numstat', '--name-status', `${from}..${to}`, '--', ...specs]);
-    return parseDiffSummary(output);
+    const [numOutput, nameOutput] = await Promise.all([
+      git.diff(['--numstat', `${from}..${to}`, '--', ...specs]),
+      git.diff(['--name-status', `${from}..${to}`, '--', ...specs]),
+    ]);
+    return buildDiffSummaryFromGitOutputs(nameOutput, numOutput);
   }
 
-  const chunks = await Promise.all(
-    commits.map((c) => git.diff(['--numstat', '--name-status', `${c.hash}^!`, '--', ...specs]))
+  const pairs = await Promise.all(
+    commits.map(async (c) => {
+      const range = `${c.hash}^!`;
+      const [numOutput, nameOutput] = await Promise.all([
+        git.diff(['--numstat', range, '--', ...specs]),
+        git.diff(['--name-status', range, '--', ...specs]),
+      ]);
+      return { numOutput, nameOutput };
+    })
   );
-  return parseDiffSummary(chunks.filter(Boolean).join('\n'));
+  const nameJoined = pairs
+    .map((p) => p.nameOutput)
+    .filter(Boolean)
+    .join('\n');
+  const numJoined = pairs
+    .map((p) => p.numOutput)
+    .filter(Boolean)
+    .join('\n');
+  return buildDiffSummaryFromGitOutputs(nameJoined, numJoined);
 }
 
 export async function getChangedFiles(
@@ -192,7 +210,128 @@ function mergeStatus(existing: DiffStatus, next: DiffStatus): DiffStatus {
   return precedence.indexOf(existing) <= precedence.indexOf(next) ? existing : next;
 }
 
-function parseDiffSummary(diffOutput: string): DiffSummary {
+type ParsedNameEntry = {
+  path: string;
+  status: DiffStatus;
+  oldPath?: string;
+};
+
+function parseNameStatusLines(nameStatusOutput: string): ParsedNameEntry[] {
+  const entries: ParsedNameEntry[] = [];
+  for (const rawLine of nameStatusOutput.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const parts = line.split('\t');
+    if (parts.length < 2) continue;
+    const statusToken = parts[0] ?? '';
+    const status = mapGitStatus(statusToken);
+    if (statusToken.startsWith('R') || statusToken.startsWith('C')) {
+      if (parts.length < 3) continue;
+      const oldPath = parts[1];
+      const newPath = parts[2];
+      if (oldPath === undefined || newPath === undefined) continue;
+      entries.push({ path: newPath, status, oldPath });
+    } else {
+      const pathOnly = parts[1];
+      if (pathOnly === undefined) continue;
+      entries.push({ path: pathOnly, status });
+    }
+  }
+  return entries;
+}
+
+function mergeNameEntriesByPath(entries: ParsedNameEntry[]): Map<string, ParsedNameEntry> {
+  const byPath = new Map<string, ParsedNameEntry>();
+  for (const e of entries) {
+    const existing = byPath.get(e.path);
+    if (!existing) {
+      byPath.set(e.path, { ...e });
+    } else {
+      existing.status = mergeStatus(existing.status, e.status);
+      if (e.oldPath) {
+        existing.oldPath = existing.oldPath ?? e.oldPath;
+      }
+    }
+  }
+  return byPath;
+}
+
+/** Map numstat path field (including `{old => new}` rename form) to the post-change path used as lookup key. */
+function numStatPathToLookupKey(pathField: string): string {
+  const brace = /^(.*)\{(.+) => (.+)\}$/.exec(pathField);
+  if (!brace) {
+    return pathField;
+  }
+  const dirRaw = brace[1];
+  const toSeg = brace[3].trim();
+  return `${dirRaw}${toSeg}`;
+}
+
+function accumulateNumStat(numStatOutput: string, into: Map<string, { additions: number; deletions: number }>): void {
+  for (const rawLine of numStatOutput.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const parts = line.split('\t');
+    if (parts.length < 3) continue;
+
+    const addStr = parts[0] ?? '';
+    const delStr = parts[1] ?? '';
+    const pathField = parts.slice(2).join('\t');
+
+    const additions = addStr !== '-' ? Number.parseInt(addStr, 10) || 0 : 0;
+    const deletions = delStr !== '-' ? Number.parseInt(delStr, 10) || 0 : 0;
+
+    const key = numStatPathToLookupKey(pathField);
+    const prev = into.get(key) ?? { additions: 0, deletions: 0 };
+    into.set(key, { additions: prev.additions + additions, deletions: prev.deletions + deletions });
+  }
+}
+
+function diffStatusToSyntheticPrefix(status: DiffStatus): string {
+  switch (status) {
+    case 'added':
+      return 'A';
+    case 'deleted':
+      return 'D';
+    case 'renamed':
+      return 'R100';
+    case 'copied':
+      return 'C100';
+    case 'type-changed':
+      return 'T';
+    case 'modified':
+      return 'M';
+    default:
+      return 'X';
+  }
+}
+
+/**
+ * Git does not combine `--numstat` and `--name-status` into one machine-readable line; using both flags
+ * yields name-status only. We run each mode separately and merge into the compact shape `parseDiffSummary` expects.
+ */
+function buildDiffSummaryFromGitOutputs(nameStatusOutput: string, numStatOutput: string): DiffSummary {
+  const numMap = new Map<string, { additions: number; deletions: number }>();
+  accumulateNumStat(numStatOutput, numMap);
+
+  const mergedName = mergeNameEntriesByPath(parseNameStatusLines(nameStatusOutput));
+  const syntheticLines: string[] = [];
+
+  for (const [path, meta] of mergedName) {
+    const counts = numMap.get(path) ?? { additions: 0, deletions: 0 };
+    const prefix = diffStatusToSyntheticPrefix(meta.status);
+    if (meta.oldPath) {
+      syntheticLines.push(`${prefix}\t${counts.additions}\t${counts.deletions}\t${meta.oldPath}\t${path}`);
+    } else {
+      syntheticLines.push(`${prefix}\t${counts.additions}\t${counts.deletions}\t${path}`);
+    }
+  }
+
+  return parseDiffSummary(syntheticLines.join('\n'));
+}
+
+/** Exported for tests; also used to merge synthetic lines when the same path appears more than once. */
+export function parseDiffSummary(diffOutput: string): DiffSummary {
   const fileMap = new Map<string, DiffFileSummary>();
 
   for (const rawLine of diffOutput.split(/\r?\n/)) {

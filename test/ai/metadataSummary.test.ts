@@ -161,6 +161,26 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
     delete process.env.OPENAI_API_KEY;
   });
 
+  it('includes structured JSON block in fallback summary when diffSummary is provided', async () => {
+    const summary = await generateSummary(
+      'diff snippet',
+      ['force-app/main/default/classes/Foo.cls'],
+      [{ hash: 'aaaaaaaaaaaaaaaa', message: 'feat' }],
+      { from: 'HEAD~1', to: 'HEAD' },
+      undefined,
+      {
+        files: [{ path: 'force-app/main/default/classes/Foo.cls', status: 'modified', additions: 1, deletions: 0 }],
+        totalFiles: 1,
+        totalAdditions: 1,
+        totalDeletions: 0,
+      }
+    );
+
+    expect(summary).toContain('## Structured Git Context');
+    expect(summary).toContain('```json');
+    expect(summary).toContain('"path": "force-app/main/default/classes/Foo.cls"');
+  });
+
   it('callOpenAi returns default message when content is only whitespace', async () => {
     const openAiCreate = jest.fn(async () => ({
       choices: [{ message: { content: '  \n\t  ' } }],

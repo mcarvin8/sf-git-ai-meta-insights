@@ -256,13 +256,24 @@ describe('sgai metadata summary generator', () => {
     );
 
     const git = {
-      diff: jest.fn(
-        async () =>
-          'A\t10\t1\tforce-app/main/default/classes/Foo.cls\n' +
-          'R100\t0\t0\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n' +
-          'X\t-\t-\tforce-app/main/default/classes/Unknown.cls\n' +
-          'bad-line-without-tabs\n'
-      ),
+      diff: jest.fn(async (args: string[]) => {
+        if (args.includes('--name-status')) {
+          return (
+            'A\tforce-app/main/default/classes/Foo.cls\n' +
+            'R100\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n' +
+            'X\tforce-app/main/default/classes/Unknown.cls\n' +
+            'bad-line-without-tabs\n'
+          );
+        }
+        if (args.includes('--numstat')) {
+          return (
+            '10\t1\tforce-app/main/default/classes/Foo.cls\n' +
+            '0\t0\tforce-app/main/default/classes/{Bar.cls => Baz.cls}\n' +
+            '-\t-\tforce-app/main/default/classes/Unknown.cls\n'
+          );
+        }
+        return '';
+      }),
       revparse: jest.fn(async () => tmpRoot),
     } as unknown as SimpleGit;
 
@@ -308,7 +319,15 @@ describe('sgai metadata summary generator', () => {
     );
 
     const git = {
-      diff: jest.fn(async () => 'M\t1\t2\tforce-app/main/default/classes/Foo.cls\n'),
+      diff: jest.fn(async (args: string[]) => {
+        if (args.includes('--name-status')) {
+          return 'M\tforce-app/main/default/classes/Foo.cls\n';
+        }
+        if (args.includes('--numstat')) {
+          return '1\t2\tforce-app/main/default/classes/Foo.cls\n';
+        }
+        return '';
+      }),
       revparse: jest.fn(async () => tmpRoot),
     } as unknown as SimpleGit;
 
@@ -318,9 +337,11 @@ describe('sgai metadata summary generator', () => {
     ];
     const summary = await getDiffSummary(git, 'HEAD~2', 'HEAD', commits, true, undefined, tmpRoot);
 
-    expect(git.diff).toHaveBeenCalledTimes(2);
-    expect(git.diff).toHaveBeenCalledWith(['--numstat', '--name-status', 'c1^!', '--', 'force-app']);
-    expect(git.diff).toHaveBeenCalledWith(['--numstat', '--name-status', 'c2^!', '--', 'force-app']);
+    expect(git.diff).toHaveBeenCalledTimes(4);
+    expect(git.diff).toHaveBeenCalledWith(['--numstat', 'c1^!', '--', 'force-app']);
+    expect(git.diff).toHaveBeenCalledWith(['--name-status', 'c1^!', '--', 'force-app']);
+    expect(git.diff).toHaveBeenCalledWith(['--numstat', 'c2^!', '--', 'force-app']);
+    expect(git.diff).toHaveBeenCalledWith(['--name-status', 'c2^!', '--', 'force-app']);
     expect(summary.totalFiles).toBe(1);
     expect(summary.totalAdditions).toBe(2);
     expect(summary.totalDeletions).toBe(4);
@@ -329,7 +350,6 @@ describe('sgai metadata summary generator', () => {
       status: 'modified',
       additions: 2,
       deletions: 4,
-      newPath: 'force-app/main/default/classes/Foo.cls',
     });
 
     await rm(tmpRoot, { recursive: true, force: true });
@@ -427,11 +447,21 @@ describe('sgai metadata summary generator', () => {
 
     it('returns a structured diff summary in JSON-compatible form', async () => {
       const git = {
-        diff: jest.fn(
-          async () =>
-            'A\t10\t1\tforce-app/main/default/classes/Foo.cls\n' +
-            'R100\t0\t0\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n'
-        ),
+        diff: jest.fn(async (args: string[]) => {
+          if (args.includes('--name-status')) {
+            return (
+              'A\tforce-app/main/default/classes/Foo.cls\n' +
+              'R100\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n'
+            );
+          }
+          if (args.includes('--numstat')) {
+            return (
+              '10\t1\tforce-app/main/default/classes/Foo.cls\n' +
+              '0\t0\tforce-app/main/default/classes/{Bar.cls => Baz.cls}\n'
+            );
+          }
+          return '';
+        }),
       } as unknown as SimpleGit;
 
       const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, ['force-app'], testRepoRoot);
