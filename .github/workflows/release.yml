@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # Required for OIDC
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 24
+          cache: yarn
+          registry-url: 'https://registry.npmjs.org'
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+
+      - name: Install Dependencies
+        run: yarn install
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+
+      - name: Build
+        run: yarn build
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+
+      - name: Publish to NPM
+        run: npm publish --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: ${{ steps.release.outputs.release_created == 'true' }}

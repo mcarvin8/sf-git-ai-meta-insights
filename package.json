@@ -1,0 +1,207 @@
+{
+  "name": "sf-git-ai-meta-insights",
+  "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
+  "version": "0.0.1",
+  "dependencies": {
+    "@oclif/core": "^4",
+    "@salesforce/core": "^8",
+    "@salesforce/sf-plugins-core": "^12",
+    "openai": "^5.0.0",
+    "simple-git": "^3.20.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@oclif/plugin-command-snapshot": "^5.1.9",
+    "@salesforce/cli-plugins-testkit": "^5.3.10",
+    "@salesforce/dev-scripts": "^10",
+    "@types/jest": "^29.5.4",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.11.0",
+    "eslint-plugin-sf-plugin": "^1.18.6",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "mocha": "^11.7.5",
+    "oclif": "^4.14.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "/lib",
+    "/messages",
+    "/oclif.manifest.json",
+    "/oclif.lock"
+  ],
+  "keywords": [
+    "force",
+    "salesforce",
+    "salesforcedx",
+    "sf",
+    "sf-plugin",
+    "sfdx",
+    "sfdx-plugin",
+    "ai",
+    "openai",
+    "metadata",
+    "git",
+    "diff",
+    "summary",
+    "insights"
+  ],
+  "license": "MIT",
+  "oclif": {
+    "commands": "./lib/commands",
+    "bin": "sf",
+    "topicSeparator": " ",
+    "devPlugins": [
+      "@oclif/plugin-help"
+    ],
+    "topics": {
+      "sgai": {
+        "description": "description for sgai",
+        "subtopics": {
+          "metadata": {
+            "description": "description for sgai.metadata"
+          }
+        }
+      }
+    },
+    "flexibleTaxonomy": true
+  },
+  "scripts": {
+    "command-docs": "oclif readme",
+    "build": "tsc -b",
+    "clean": "sf-clean",
+    "clean-all": "sf-clean all",
+    "clean:lib": "shx rm -rf lib && shx rm -rf coverage && shx rm -rf .nyc_output && shx rm -f oclif.manifest.json oclif.lock",
+    "compile": "wireit",
+    "docs": "sf-docs",
+    "format": "sf-format",
+    "lint": "wireit",
+    "postpack": "shx rm -f oclif.manifest.json oclif.lock",
+    "prepack": "sf-prepack",
+    "prepare": "husky install",
+    "test": "wireit",
+    "test:nuts": "oclif manifest && jest --testMatch \"**/*.nut.ts\"",
+    "test:only": "wireit",
+    "version": "oclif readme"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "wireit": {
+    "build": {
+      "dependencies": [
+        "compile",
+        "lint"
+      ]
+    },
+    "compile": {
+      "command": "tsc -p . --pretty --incremental",
+      "files": [
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        "messages/**"
+      ],
+      "output": [
+        "lib/**",
+        "*.tsbuildinfo"
+      ],
+      "clean": "if-file-deleted"
+    },
+    "format": {
+      "command": "prettier --write \"+(src|test|schemas)/**/*.+(ts|js|json)|command-snapshot.json\"",
+      "files": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "schemas/**/*.json",
+        "command-snapshot.json",
+        ".prettier*"
+      ],
+      "output": []
+    },
+    "lint": {
+      "command": "eslint src test --color --cache --cache-location .eslintcache",
+      "files": [
+        "src/**/*.ts",
+        "test/**/*.ts",
+        "messages/**",
+        "**/.eslint*",
+        "**/tsconfig.json"
+      ],
+      "output": []
+    },
+    "test:compile": {
+      "command": "tsc -p \"./test\" --pretty",
+      "files": [
+        "test/**/*.ts",
+        "**/tsconfig.json"
+      ],
+      "output": []
+    },
+    "test": {
+      "dependencies": [
+        "test:compile",
+        "test:only",
+        "lint"
+      ]
+    },
+    "test:only": {
+      "command": "jest --coverage",
+      "env": {
+        "FORCE_COLOR": "2"
+      },
+      "files": [
+        "test/**/*.ts",
+        "src/**/*.ts",
+        "**/tsconfig.json",
+        ".mocha*",
+        "!*.nut.ts",
+        ".nycrc"
+      ],
+      "output": []
+    },
+    "test:command-reference": {
+      "command": "\"./bin/dev\" commandreference:generate --erroronwarnings",
+      "files": [
+        "src/**/*.ts",
+        "messages/**",
+        "package.json"
+      ],
+      "output": [
+        "tmp/root"
+      ]
+    },
+    "test:deprecation-policy": {
+      "command": "\"./bin/dev\" snapshot:compare",
+      "files": [
+        "src/**/*.ts"
+      ],
+      "output": [],
+      "dependencies": [
+        "compile"
+      ]
+    },
+    "test:json-schema": {
+      "command": "\"./bin/dev\" schema:compare",
+      "files": [
+        "src/**/*.ts",
+        "schemas"
+      ],
+      "output": []
+    }
+  },
+  "exports": "./lib/index.js",
+  "type": "module",
+  "author": "Matt Carvin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcarvin8/sf-git-ai-meta-insights.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mcarvin8/sf-git-ai-meta-insights/issues"
+  }
+}
