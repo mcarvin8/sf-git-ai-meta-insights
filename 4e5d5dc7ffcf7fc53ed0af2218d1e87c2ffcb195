@@ -1,0 +1,37 @@
+src/commands/sgai/metadata/summarize.ts
+  f6365ea1c3088fcf 56-60,73-80,132
+messages/sgai.metadata.summarize.md
+  f6365ea1c3088fcf 65-72
+src/ai/metadataSummary.ts
+  f6365ea1c3088fcf 2,4-31,49-50,62,75-78,83,150,189-190
+test/commands/sgai/metadata/summarize.test.ts
+  f6365ea1c3088fcf 5,10-12,26-38,74-105,132-152,172,181,472-551
+test/ai/metadataSummary.test.ts
+  f6365ea1c3088fcf 1,3-139
+src/ai/openAiConfig.ts
+  f6365ea1c3088fcf 1-135
+README.md
+  f6365ea1c3088fcf 9,64,68-74,76-103,105-107
+test/ai/openAiConfig.test.ts
+  f6365ea1c3088fcf 1-115,117-183,185-192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "4e5d5dc7ffcf7fc53ed0af2218d1e87c2ffcb195",
+  "prompts": {
+    "f6365ea1c3088fcf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a640d4d1-a9db-4c8e-8ecc-d74bff497e55",
+        "model": "default"
+      },
+      "human_author": "Matt Carvin <90224411+mcarvin8@users.noreply.github.com>",
+      "messages": [],
+      "total_additions": 1053,
+      "total_deletions": 261,
+      "accepted_lines": 729,
+      "overriden_lines": 3
+    }
+  }
+}
