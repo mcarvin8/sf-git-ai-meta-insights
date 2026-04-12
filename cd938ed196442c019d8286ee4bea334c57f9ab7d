@@ -1,0 +1,27 @@
+test/ai/metadataSummary.test.ts
+  0322a6b49cc3cb51 164-183
+test/git/gitDiff.test.ts
+  0322a6b49cc3cb51 1-151
+src/git/gitDiff.ts
+  0322a6b49cc3cb51 122-126,129-137,139-147,213-334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "cd938ed196442c019d8286ee4bea334c57f9ab7d",
+  "prompts": {
+    "0322a6b49cc3cb51": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "99c772dc-8c6c-4445-87d2-15226f03b5e5",
+        "model": "default"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 322,
+      "total_deletions": 16,
+      "accepted_lines": 316,
+      "overriden_lines": 0
+    }
+  }
+}
