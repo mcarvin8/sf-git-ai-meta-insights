@@ -16,6 +16,7 @@ import {
   getCommits,
   filterCommits,
   getDiff,
+  getDiffSummary,
   getChangedFiles,
   getRepoRoot,
 } from '../../../../src/git/gitDiff.js';
@@ -84,8 +85,9 @@ describe('sgai metadata summary generator', () => {
       chat: { completions: { create: openAiCreate } },
     }));
 
-    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
-    const userMsg = calls[0][0].messages[1]?.content ?? '';
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
     expect(userMsg).toContain('TRUNCATED:');
     expect(userMsg.length).toBeLessThan(hugeDiff.length + 5000);
 
@@ -122,8 +124,9 @@ describe('sgai metadata summary generator', () => {
 
     expect(summary).toContain('AI generated summary');
     expect(openAiCreate).toHaveBeenCalled();
-    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ role: string; content: string }> }]>;
-    const userContent = calls[0][0].messages[1]?.content ?? '';
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userContent =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
     expect(userContent).not.toContain('Team:');
 
     delete process.env.OPENAI_API_KEY;
@@ -161,8 +164,9 @@ describe('sgai metadata summary generator', () => {
       chat: { completions: { create: openAiCreate } },
     }));
 
-    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
-    const userMsg = calls[0][0].messages[1]?.content ?? '';
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
     expect(userMsg).toMatch(/^Team: Platform\n/);
 
     delete process.env.OPENAI_API_KEY;
@@ -197,8 +201,10 @@ describe('sgai metadata summary generator', () => {
       chat: { completions: { create: openAiCreate } },
     }));
 
-    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
-    expect(calls[0][0].messages[1]?.content).toMatch(/^Team: Squad A\n/);
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
+    expect(userMsg).toMatch(/^Team: Squad A\n/);
 
     delete process.env.OPENAI_API_KEY;
     delete process.env.METADATA_AUDIT_TEAM;
@@ -224,6 +230,109 @@ describe('sgai metadata summary generator', () => {
 
   it('throws when message-filter is not a valid regular expression', () => {
     expect(() => filterCommits([{ hash: '1', message: 'x' }], '[')).toThrow(/Invalid commit message filter/);
+  });
+
+  it('returns empty structured diff summary when the repo has no package directories', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-no-sfdx-summary-'));
+    const git = {
+      revparse: jest.fn(async () => tmpRoot),
+      diff: jest.fn(),
+    } as unknown as SimpleGit;
+
+    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, undefined, tmpRoot);
+
+    expect(summary).toEqual({ files: [], totalFiles: 0, totalAdditions: 0, totalDeletions: 0 });
+    expect(git.diff).not.toHaveBeenCalled();
+
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('parses numstat name-status output into a structured diff summary', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-diff-summary-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
+      'utf8'
+    );
+
+    const git = {
+      diff: jest.fn(
+        async () =>
+          'A\t10\t1\tforce-app/main/default/classes/Foo.cls\n' +
+          'R100\t0\t0\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n' +
+          'X\t-\t-\tforce-app/main/default/classes/Unknown.cls\n' +
+          'bad-line-without-tabs\n'
+      ),
+      revparse: jest.fn(async () => tmpRoot),
+    } as unknown as SimpleGit;
+
+    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, undefined, tmpRoot);
+
+    expect(summary.totalFiles).toBe(3);
+    expect(summary.totalAdditions).toBe(10);
+    expect(summary.totalDeletions).toBe(1);
+    expect(summary.files).toEqual(
+      expect.arrayContaining([
+        {
+          path: 'force-app/main/default/classes/Foo.cls',
+          status: 'added',
+          additions: 10,
+          deletions: 1,
+        },
+        {
+          path: 'force-app/main/default/classes/Baz.cls',
+          status: 'renamed',
+          additions: 0,
+          deletions: 0,
+          oldPath: 'force-app/main/default/classes/Bar.cls',
+          newPath: 'force-app/main/default/classes/Baz.cls',
+        },
+        {
+          path: 'force-app/main/default/classes/Unknown.cls',
+          status: 'unknown',
+          additions: 0,
+          deletions: 0,
+        },
+      ])
+    );
+
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('aggregates multiple commit diffs when filtering by commit', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-diff-summary-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
+      'utf8'
+    );
+
+    const git = {
+      diff: jest.fn(async () => 'M\t1\t2\tforce-app/main/default/classes/Foo.cls\n'),
+      revparse: jest.fn(async () => tmpRoot),
+    } as unknown as SimpleGit;
+
+    const commits = [
+      { hash: 'c1', message: 'commit 1' },
+      { hash: 'c2', message: 'commit 2' },
+    ];
+    const summary = await getDiffSummary(git, 'HEAD~2', 'HEAD', commits, true, undefined, tmpRoot);
+
+    expect(git.diff).toHaveBeenCalledTimes(2);
+    expect(git.diff).toHaveBeenCalledWith(['--numstat', '--name-status', 'c1^!', '--', 'force-app']);
+    expect(git.diff).toHaveBeenCalledWith(['--numstat', '--name-status', 'c2^!', '--', 'force-app']);
+    expect(summary.totalFiles).toBe(1);
+    expect(summary.totalAdditions).toBe(2);
+    expect(summary.totalDeletions).toBe(4);
+    expect(summary.files[0]).toEqual({
+      path: 'force-app/main/default/classes/Foo.cls',
+      status: 'modified',
+      additions: 2,
+      deletions: 4,
+      newPath: 'force-app/main/default/classes/Foo.cls',
+    });
+
+    await rm(tmpRoot, { recursive: true, force: true });
   });
 
   it('creates a git client for a cwd', () => {
@@ -314,6 +423,38 @@ describe('sgai metadata summary generator', () => {
 
       expect(result).toBe('patch');
       expect(git.diff).toHaveBeenCalledWith(['abcdef1^!', '--', 'included-app']);
+    });
+
+    it('returns a structured diff summary in JSON-compatible form', async () => {
+      const git = {
+        diff: jest.fn(
+          async () =>
+            'A\t10\t1\tforce-app/main/default/classes/Foo.cls\n' +
+            'R100\t0\t0\tforce-app/main/default/classes/Bar.cls\tforce-app/main/default/classes/Baz.cls\n'
+        ),
+      } as unknown as SimpleGit;
+
+      const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, ['force-app'], testRepoRoot);
+
+      expect(summary.totalFiles).toBe(2);
+      expect(summary.totalAdditions).toBe(10);
+      expect(summary.totalDeletions).toBe(1);
+      expect(summary.files).toEqual([
+        {
+          path: 'force-app/main/default/classes/Foo.cls',
+          status: 'added',
+          additions: 10,
+          deletions: 1,
+        },
+        {
+          path: 'force-app/main/default/classes/Baz.cls',
+          status: 'renamed',
+          additions: 0,
+          deletions: 0,
+          oldPath: 'force-app/main/default/classes/Bar.cls',
+          newPath: 'force-app/main/default/classes/Baz.cls',
+        },
+      ]);
     });
 
     it('returns empty diff when all package directories are ignored', async () => {

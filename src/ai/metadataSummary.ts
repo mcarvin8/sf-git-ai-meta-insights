@@ -1,4 +1,4 @@
-import type { CommitInfo } from '../git/gitDiff.js';
+import type { CommitInfo, DiffSummary } from '../git/gitDiff.js';
 import { createOpenAiLikeClient, shouldUseLlmGateway, type OpenAiLikeClient } from './openAiConfig.js';
 
 /**
@@ -66,7 +66,8 @@ export async function generateSummary(
   fileNames: string[],
   commits: CommitInfo[],
   flags: SummarizeFlags,
-  openAiClientProvider?: OpenAiClientProvider
+  openAiClientProvider?: OpenAiClientProvider,
+  diffSummary?: DiffSummary
 ): Promise<string> {
   const fileSection = fileNames.length
     ? fileNames.map((name) => `- ${name}`).join('\n')
@@ -75,7 +76,7 @@ export async function generateSummary(
   if (shouldUseLlmGateway()) {
     const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
     const diffForLlm = truncateUnifiedDiffForLlm(diffText, maxDiffChars);
-    const userContent = buildOpenAiUserContent(flags, commits, fileNames, diffForLlm);
+    const userContent = buildOpenAiUserContent(flags, commits, fileNames, diffForLlm, diffSummary);
     return callOpenAi(
       userContent,
       flags.model ?? 'gpt-4o-mini',
@@ -84,14 +85,15 @@ export async function generateSummary(
     );
   }
 
-  return buildFallbackSummary(fileSection, commits, diffText, flags);
+  return buildFallbackSummary(fileSection, commits, diffText, flags, diffSummary);
 }
 
 function buildOpenAiUserContent(
   flags: SummarizeFlags,
   commits: CommitInfo[],
   fileNames: string[],
-  diffText: string
+  diffText: string,
+  diffSummary?: DiffSummary
 ): string {
   const from = flags.from;
   const to = flags.to ?? 'HEAD';
@@ -108,6 +110,9 @@ function buildOpenAiUserContent(
       : '- (no commits in range after filtering)';
 
   const pathsBlock = fileNames.length > 0 ? fileNames.join('\n') : '(no metadata paths in diff scope)';
+  const structuredDiffSection = diffSummary
+    ? `=== Structured git context (JSON summary) ===\n${JSON.stringify(diffSummary, null, 2)}\n\n`
+    : '';
 
   return (
     `${teamLine}` +
@@ -119,6 +124,7 @@ function buildOpenAiUserContent(
     `${commitBlock}\n\n` +
     '=== Changed metadata paths ===\n' +
     `${pathsBlock}\n\n` +
+    structuredDiffSection +
     '=== Git context (unified diff(s) scoped to Salesforce metadata paths; patches may be truncated with an explicit marker) ===\n' +
     diffText
   );
@@ -128,7 +134,8 @@ function buildFallbackSummary(
   fileSection: string,
   commits: CommitInfo[],
   diffText: string,
-  flags: SummarizeFlags
+  flags: SummarizeFlags,
+  diffSummary?: DiffSummary
 ): string {
   const filterText = flags.messageFilter
     ? `Filtered by: \`${flags.messageFilter}\`\n\n`
@@ -136,6 +143,10 @@ function buildFallbackSummary(
 
   const team = resolveSummaryTeam(flags);
   const teamSection = team ? `## Team\n${team}\n\n` : '';
+
+  const structuredBlock = diffSummary
+    ? '## Structured Git Context\n\n' + '```json\n' + `${JSON.stringify(diffSummary, null, 2)}\n` + '```\n\n'
+    : '';
 
   return (
     '# Metadata Change Summary\n\n' +
@@ -146,6 +157,7 @@ function buildFallbackSummary(
     '## Commit Filter\n' +
     filterText +
     `## Changed Files\n${fileSection}\n\n` +
+    structuredBlock +
     '## Local Summary\n' +
     'No LLM gateway was configured (set `OPENAI_API_KEY` or `LLM_API_KEY`, `OPENAI_BASE_URL` or `LLM_BASE_URL`, and/or `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS`), so this is a local summary instead.\n\n' +
     '### Commits\n' +

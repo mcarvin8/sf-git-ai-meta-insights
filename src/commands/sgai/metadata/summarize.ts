@@ -1,7 +1,14 @@
 import { writeFile } from 'node:fs/promises';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import { createGitClient, filterCommits, getCommits, getDiff, getChangedFiles } from '../../../git/gitDiff.js';
+import {
+  createGitClient,
+  filterCommits,
+  getCommits,
+  getDiff,
+  getDiffSummary,
+  getChangedFiles,
+} from '../../../git/gitDiff.js';
 import { generateSummary } from '../../../ai/metadataSummary.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
@@ -115,6 +122,14 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       Boolean(flags['message-filter']),
       ignorePackageDirectories
     );
+    const diffSummary = await getDiffSummary(
+      git,
+      from,
+      to,
+      filteredCommits,
+      Boolean(flags['message-filter']),
+      ignorePackageDirectories
+    );
     const fileNames = await getChangedFiles(
       git,
       from,
@@ -123,14 +138,21 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       Boolean(flags['message-filter']),
       ignorePackageDirectories
     );
-    const summary = await generateSummary(diffText, fileNames, filteredCommits, {
-      from,
-      to: flags.to,
-      messageFilter: flags['message-filter'],
-      model: flags.model,
-      team: flags.team,
-      maxDiffChars: maxDiffCharsFlag,
-    });
+    const summary = await generateSummary(
+      diffText,
+      fileNames,
+      filteredCommits,
+      {
+        from,
+        to: flags.to,
+        messageFilter: flags['message-filter'],
+        model: flags.model,
+        team: flags.team,
+        maxDiffChars: maxDiffCharsFlag,
+      },
+      undefined,
+      diffSummary
+    );
 
     await writeFile(outputPath, summary, 'utf8');
     this.log(`Generated metadata summary at ${outputPath}`);

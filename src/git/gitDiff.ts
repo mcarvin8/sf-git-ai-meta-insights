@@ -8,6 +8,24 @@ export type CommitInfo = {
   message: string;
 };
 
+export type DiffStatus = 'added' | 'deleted' | 'modified' | 'renamed' | 'copied' | 'type-changed' | 'unknown';
+
+export type DiffFileSummary = {
+  path: string;
+  status: DiffStatus;
+  additions: number;
+  deletions: number;
+  oldPath?: string;
+  newPath?: string;
+};
+
+export type DiffSummary = {
+  files: DiffFileSummary[];
+  totalFiles: number;
+  totalAdditions: number;
+  totalDeletions: number;
+};
+
 const SFDX_PROJECT_FILE_NAME = 'sfdx-project.json';
 
 type PackageGitContext = {
@@ -84,6 +102,33 @@ export async function getDiff(
   return patches.filter(Boolean).join('\n');
 }
 
+export async function getDiffSummary(
+  git: SimpleGit,
+  from: string,
+  to: string,
+  commits: CommitInfo[],
+  filterByCommits: boolean,
+  ignorePackageDirectories?: string[],
+  repoRootOverride?: string
+): Promise<DiffSummary> {
+  const ctx = await getPackageGitContext(git, ignorePackageDirectories, repoRootOverride);
+  if (!ctx) {
+    return { files: [], totalFiles: 0, totalAdditions: 0, totalDeletions: 0 };
+  }
+
+  const { specs } = ctx;
+
+  if (!filterByCommits) {
+    const output = await git.diff(['--numstat', '--name-status', `${from}..${to}`, '--', ...specs]);
+    return parseDiffSummary(output);
+  }
+
+  const chunks = await Promise.all(
+    commits.map((c) => git.diff(['--numstat', '--name-status', `${c.hash}^!`, '--', ...specs]))
+  );
+  return parseDiffSummary(chunks.filter(Boolean).join('\n'));
+}
+
 export async function getChangedFiles(
   git: SimpleGit,
   from: string,
@@ -129,6 +174,77 @@ export async function getChangedFiles(
   );
 
   return Array.from(fileSet);
+}
+
+function mapGitStatus(statusCode: string): DiffStatus {
+  if (statusCode.startsWith('A')) return 'added';
+  if (statusCode.startsWith('D')) return 'deleted';
+  if (statusCode.startsWith('R')) return 'renamed';
+  if (statusCode.startsWith('C')) return 'copied';
+  if (statusCode.startsWith('T')) return 'type-changed';
+  if (statusCode.startsWith('M')) return 'modified';
+  return 'unknown';
+}
+
+function mergeStatus(existing: DiffStatus, next: DiffStatus): DiffStatus {
+  if (existing === next) return existing;
+  const precedence: DiffStatus[] = ['deleted', 'added', 'renamed', 'copied', 'type-changed', 'modified', 'unknown'];
+  return precedence.indexOf(existing) <= precedence.indexOf(next) ? existing : next;
+}
+
+function parseDiffSummary(diffOutput: string): DiffSummary {
+  const fileMap = new Map<string, DiffFileSummary>();
+
+  for (const rawLine of diffOutput.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const parts = line.split('\t');
+    if (parts.length < 3) continue;
+
+    const statusToken = parts.shift() ?? '';
+    const status = mapGitStatus(statusToken);
+    const additions = parts[0] && parts[0] !== '-' ? Number.parseInt(parts[0], 10) || 0 : 0;
+    const deletions = parts[1] && parts[1] !== '-' ? Number.parseInt(parts[1], 10) || 0 : 0;
+
+    let oldPath: string | undefined;
+    let newPath: string;
+    if (parts.length === 3) {
+      newPath = parts[2];
+    } else if (parts.length === 4) {
+      oldPath = parts[2];
+      newPath = parts[3];
+    } else {
+      continue;
+    }
+
+    const path = newPath;
+    const existing = fileMap.get(path);
+    if (existing) {
+      existing.additions += additions;
+      existing.deletions += deletions;
+      existing.status = mergeStatus(existing.status, status);
+      if (oldPath) existing.oldPath = existing.oldPath ?? oldPath;
+      existing.newPath = existing.newPath ?? newPath;
+    } else {
+      fileMap.set(path, {
+        path,
+        status,
+        additions,
+        deletions,
+        oldPath,
+        newPath: oldPath ? newPath : undefined,
+      });
+    }
+  }
+
+  const files = Array.from(fileMap.values());
+  return {
+    files,
+    totalFiles: files.length,
+    totalAdditions: files.reduce((sum, file) => sum + file.additions, 0),
+    totalDeletions: files.reduce((sum, file) => sum + file.deletions, 0),
+  };
 }
 
 async function getPackageDirectoryPaths(
