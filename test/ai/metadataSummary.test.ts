@@ -61,10 +61,50 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
       })
     );
 
-    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
-    const userMsg = calls[0][0].messages[1]?.content ?? '';
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
     expect(userMsg).toContain('Commit message filter (regex): (fix|feat)');
     expect(userMsg).toContain('concatenated per-commit unified patches');
+
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('includes structured JSON diff summary in OpenAI user content when provided', async () => {
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'ok' } }],
+    }));
+
+    process.env.OPENAI_API_KEY = 'k';
+
+    await generateSummary(
+      'diff --git a/x b/x\n',
+      ['force-app/main/default/classes/Foo.cls'],
+      [{ hash: 'aaaaaaaaaaaaaaaa', message: 'fix stuff' }],
+      { from: 'HEAD~2', to: 'HEAD' },
+      async () => ({
+        chat: { completions: { create: openAiCreate } },
+      }),
+      {
+        files: [
+          {
+            path: 'force-app/main/default/classes/Foo.cls',
+            status: 'modified',
+            additions: 3,
+            deletions: 1,
+          },
+        ],
+        totalFiles: 1,
+        totalAdditions: 3,
+        totalDeletions: 1,
+      }
+    );
+
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
+    expect(userMsg).toContain('=== Structured git context (JSON summary) ===');
+    expect(userMsg).toContain('"path": "force-app/main/default/classes/Foo.cls"');
 
     delete process.env.OPENAI_API_KEY;
   });
