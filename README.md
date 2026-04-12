@@ -6,7 +6,7 @@
 
 ## Overview
 
-This plugin analyzes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown summary file. When an `OPENAI_API_KEY` is available, it uses OpenAI to generate a richer description; otherwise it falls back to a local summary.
+This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown summary file. When an `OPENAI_API_KEY` is available, it uses OpenAI to generate a richer description; otherwise it falls back to a local summary.
 
 ## Installation
 
@@ -16,43 +16,44 @@ sf plugins install sf-git-ai-meta-insights@latest
 
 ## Command
 
-### `sf sgai metadata analyze`
+### `sf sgai metadata summarize`
 
-Analyze metadata changes between two Git refs and write the generated summary to a Markdown file.
+Summarize metadata changes between two Git refs and write the generated summary to a Markdown file.
 
 #### Flags
 
-- `--from` `-f` Start reference for the git diff range. Defaults to `HEAD~1`.
+- `--from` `-f` (**required**) Start reference for the git diff range. You must pass an explicit ref (for example `HEAD~1`, a tag, or a commit hash); there is no default.
 - `--to` `-t` End reference for the git diff range. Defaults to `HEAD`.
 - `--message-filter` `-m` Regex filter for commit messages.
-- `--output` `-o` Output file path for the generated summary. Defaults to `metadata-summary.md`.
+- `--team` Optional team or squad label for the summary (also supported via `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM`).
+- `--output` `-p` Output file path for the generated summary. Defaults to `metadata-summary.md`.
 - `--model` OpenAI model used for the summary. Defaults to `gpt-4o-mini`.
 - `--ignore-package-directory` `-i` Ignore package directories defined in `sfdx-project.json`. This flag may be provided multiple times.
 
 #### Examples
 
-Generate a summary for the last commit range:
+Summarize changes since the previous commit:
 
 ```bash
-sf sgai metadata analyze
+sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
-Generate a summary for a custom commit range and save it to `changes.md`:
+Summarize a custom range and save to `changes.md`:
 
 ```bash
-sf sgai metadata analyze --from HEAD~5 --to HEAD --output changes.md
+sf sgai metadata summarize --from HEAD~5 --to HEAD --output changes.md
 ```
 
-Generate a summary filtered by commit message content:
+Summarize only commits whose messages match a regex:
 
 ```bash
-sf sgai metadata analyze --message-filter "(feature|fix)"
+sf sgai metadata summarize --from main --to HEAD --message-filter "(feature|fix)"
 ```
 
 Use a custom OpenAI model:
 
 ```bash
-sf sgai metadata analyze --model gpt-4o-mini
+sf sgai metadata summarize --from HEAD~1 --to HEAD --model gpt-4o-mini
 ```
 
 ## Requirements

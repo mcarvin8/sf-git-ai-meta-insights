@@ -1,17 +1,17 @@
 import { writeFile } from 'node:fs/promises';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { Messages } from '@salesforce/core';
+import { Messages, SfError } from '@salesforce/core';
 import { createGitClient, filterCommits, getCommits, getDiff, getChangedFiles } from '../../../git/gitDiff.js';
-import { generateSummary, type AnalyzeFlags } from '../../../ai/metadataSummary.js';
+import { generateSummary } from '../../../ai/metadataSummary.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
-const messages = Messages.loadMessages('sf-git-ai-meta-insights', 'sgai.metadata.analyze');
+const messages = Messages.loadMessages('sf-git-ai-meta-insights', 'sgai.metadata.summarize');
 
-export type SgaiMetadataAnalyzeResult = {
+export type SgaiMetadataSummarizeResult = {
   path: string;
 };
 
-export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeResult> {
+export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummarizeResult> {
   public static readonly summary = messages.getMessage('summary');
   public static readonly description = messages.getMessage('description');
   public static readonly examples = messages.getMessages('examples');
@@ -21,7 +21,7 @@ export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeRe
       summary: messages.getMessage('flags.from.summary'),
       description: messages.getMessage('flags.from.description'),
       char: 'f',
-      required: false,
+      required: true,
     }),
     to: Flags.string({
       summary: messages.getMessage('flags.to.summary'),
@@ -33,6 +33,11 @@ export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeRe
       summary: messages.getMessage('flags.message-filter.summary'),
       description: messages.getMessage('flags.message-filter.description'),
       char: 'm',
+      required: false,
+    }),
+    team: Flags.string({
+      summary: messages.getMessage('flags.team.summary'),
+      description: messages.getMessage('flags.team.description'),
       required: false,
     }),
     output: Flags.string({
@@ -57,10 +62,10 @@ export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeRe
     }),
   };
 
-  public async run(): Promise<SgaiMetadataAnalyzeResult> {
-    const { flags } = await this.parse(SgaiMetadataAnalyze);
+  public async run(): Promise<SgaiMetadataSummarizeResult> {
+    const { flags } = await this.parse(SgaiMetadataSummarize);
 
-    const from = flags.from ?? 'HEAD~1';
+    const from = flags.from;
     const to = flags.to ?? 'HEAD';
     const outputPath = flags.output ?? 'metadata-summary.md';
     const ignorePackageDirectories = Array.isArray(flags['ignore-package-directory'])
@@ -71,7 +76,16 @@ export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeRe
     const git = createGitClient(process.cwd());
 
     const commits = await getCommits(git, from, to);
-    const filteredCommits = filterCommits(commits, flags['message-filter']);
+    let filteredCommits;
+    try {
+      filteredCommits = filterCommits(commits, flags['message-filter']);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('Invalid commit message filter')) {
+        throw new SfError(message, 'InvalidMessageFilter');
+      }
+      throw err;
+    }
 
     if (flags['message-filter'] && filteredCommits.length === 0) {
       const message = `No commits matched the filter '${flags['message-filter']}' between ${from} and ${to}.`;
@@ -96,7 +110,13 @@ export default class SgaiMetadataAnalyze extends SfCommand<SgaiMetadataAnalyzeRe
       Boolean(flags['message-filter']),
       ignorePackageDirectories
     );
-    const summary = await generateSummary(diffText, fileNames, filteredCommits, flags as AnalyzeFlags);
+    const summary = await generateSummary(diffText, fileNames, filteredCommits, {
+      from,
+      to: flags.to,
+      messageFilter: flags['message-filter'],
+      model: flags.model,
+      team: flags.team,
+    });
 
     await writeFile(outputPath, summary, 'utf8');
     this.log(`Generated metadata summary at ${outputPath}`);

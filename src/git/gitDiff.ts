@@ -10,6 +10,12 @@ export type CommitInfo = {
 
 const SFDX_PROJECT_FILE_NAME = 'sfdx-project.json';
 
+type PackageGitContext = {
+  repoRoot: string;
+  specs: string[];
+  packagePaths: string[];
+};
+
 export function createGitClient(cwd = process.cwd()): SimpleGit {
   return simpleGit(cwd);
 }
@@ -20,17 +26,39 @@ export async function getCommits(git: SimpleGit, from: string, to: string): Prom
 }
 
 export function filterCommits(commits: CommitInfo[], messageFilter?: string): CommitInfo[] {
-  if (!messageFilter) return commits;
-  const regex = new RegExp(messageFilter, 'i');
+  if (messageFilter === undefined || messageFilter.trim() === '') {
+    return commits;
+  }
+  let regex: RegExp;
+  try {
+    regex = new RegExp(messageFilter, 'i');
+  } catch {
+    throw new Error(`Invalid commit message filter regular expression: ${JSON.stringify(messageFilter)}`);
+  }
   return commits.filter((c) => regex.test(c.message));
 }
 
-/**
- * ✅ NEW: Git-native repo root
- */
 export async function getRepoRoot(git: SimpleGit): Promise<string> {
   const root = await git.revparse(['--show-toplevel']);
   return root.trim();
+}
+
+async function getPackageGitContext(
+  git: SimpleGit,
+  ignorePackageDirectories: string[] | undefined,
+  repoRootOverride?: string
+): Promise<PackageGitContext | null> {
+  const repoRoot = repoRootOverride ?? (await getRepoRoot(git));
+  const packagePaths = await getPackageDirectoryPaths(ignorePackageDirectories, repoRoot);
+
+  if (packagePaths.length === 0) return null;
+
+  const specs = packagePaths.map((p) => {
+    const rel = relative(repoRoot, p);
+    return rel === '' ? '.' : rel;
+  });
+
+  return { repoRoot, specs, packagePaths };
 }
 
 export async function getDiff(
@@ -40,17 +68,12 @@ export async function getDiff(
   commits: CommitInfo[],
   filterByCommits: boolean,
   ignorePackageDirectories?: string[],
-  repoRootOverride?: string // ✅ injected for tests
+  repoRootOverride?: string
 ): Promise<string> {
-  const repoRoot = repoRootOverride ?? (await getRepoRoot(git));
-  const packagePaths = await getPackageDirectoryPaths(ignorePackageDirectories, repoRoot);
+  const ctx = await getPackageGitContext(git, ignorePackageDirectories, repoRootOverride);
+  if (!ctx) return '';
 
-  if (packagePaths.length === 0) return '';
-
-  const specs = packagePaths.map((p) => {
-    const rel = relative(repoRoot, p);
-    return rel === '' ? '.' : rel;
-  });
+  const { specs } = ctx;
 
   if (!filterByCommits) {
     return git.diff([`${from}..${to}`, '--', ...specs]);
@@ -68,17 +91,12 @@ export async function getChangedFiles(
   commits: CommitInfo[],
   filterByCommits: boolean,
   ignorePackageDirectories?: string[],
-  repoRootOverride?: string // ✅ injected for tests
+  repoRootOverride?: string
 ): Promise<string[]> {
-  const repoRoot = repoRootOverride ?? (await getRepoRoot(git));
-  const packagePaths = await getPackageDirectoryPaths(ignorePackageDirectories, repoRoot);
+  const ctx = await getPackageGitContext(git, ignorePackageDirectories, repoRootOverride);
+  if (!ctx) return [];
 
-  if (packagePaths.length === 0) return [];
-
-  const specs = packagePaths.map((p) => {
-    const rel = relative(repoRoot, p);
-    return rel === '' ? '.' : rel;
-  });
+  const { repoRoot, specs, packagePaths } = ctx;
 
   const matchesPackage = (file: string): boolean => {
     const resolved = resolve(repoRoot, file);

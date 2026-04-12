@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { beforeAll, afterAll, describe, it, expect } from '@jest/globals';
 
-describe('sgai metadata analyze NUT', () => {
+/** TestSession + git setup often exceeds Jest's default 5s hook timeout on CI and Windows. */
+const NUT_TIMEOUT_MS = 120_000;
+
+describe('sgai metadata summarize NUT', () => {
   let session: TestSession;
 
   beforeAll(async () => {
@@ -35,15 +38,19 @@ describe('sgai metadata analyze NUT', () => {
     );
     execSync('git add .', { cwd: projectRoot, stdio: 'pipe' });
     execSync('git commit -m "Update metadata file"', { cwd: projectRoot, stdio: 'pipe' });
-  });
+  }, NUT_TIMEOUT_MS);
 
   afterAll(async () => {
     await session?.clean();
-  });
+  }, NUT_TIMEOUT_MS);
 
-  it('runs sgai metadata analyze and returns a summary header', async () => {
-    execCmd('sgai metadata analyze --from HEAD~1 --to HEAD', { cwd: session.dir, ensureExitCode: 0 });
-    const summary = await readFile(join(session.dir, 'metadata-summary.md'), 'utf8');
-    expect(summary).toContain('# Metadata Change Summary');
-  });
+  it(
+    'runs sgai metadata summarize and returns a summary header',
+    async () => {
+      execCmd('sgai metadata summarize --from HEAD~1 --to HEAD', { cwd: session.dir, ensureExitCode: 0 });
+      const summary = await readFile(join(session.dir, 'metadata-summary.md'), 'utf8');
+      expect(summary).toContain('# Metadata Change Summary');
+    },
+    NUT_TIMEOUT_MS
+  );
 });

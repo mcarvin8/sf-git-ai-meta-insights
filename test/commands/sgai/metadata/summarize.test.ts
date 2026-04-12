@@ -23,7 +23,7 @@ describe('sgai metadata summary generator', () => {
     const diffText = 'diff --git a/foo b/foo\nindex 123..456';
     const fileNames = ['force-app/main/default/classes/AccountProfile.cls'];
     const commits = [{ hash: 'abcdef1234567890', message: 'Add metadata summary support' }];
-    const flags = {};
+    const flags = { from: 'HEAD~1' };
 
     const summary = await generateSummary(diffText, fileNames, commits, flags);
 
@@ -65,7 +65,7 @@ describe('sgai metadata summary generator', () => {
       'diff --git a/b b/b\nindex 1..2',
       ['force-app/main/default/classes/AccountProfile.cls'],
       [{ hash: 'abcdef1234567890', message: 'Add metadata summary support' }],
-      {},
+      { from: 'HEAD~1' },
       async () => ({
         chat: { completions: { create: openAiCreate } },
       })
@@ -73,8 +73,63 @@ describe('sgai metadata summary generator', () => {
 
     expect(summary).toContain('AI generated summary');
     expect(openAiCreate).toHaveBeenCalled();
+    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ role: string; content: string }> }]>;
+    const userContent = calls[0][0].messages[1]?.content ?? '';
+    expect(userContent).not.toContain('Team:');
 
     delete process.env.OPENAI_API_KEY;
+  });
+
+  it('includes Team in the OpenAI user message when --team is set', async () => {
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'ok' } }],
+    }));
+
+    process.env.OPENAI_API_KEY = 'test-key';
+
+    await generateSummary('diff --git a/b b/b\n', [], [], { from: 'HEAD~1', team: '  Platform  ' }, async () => ({
+      chat: { completions: { create: openAiCreate } },
+    }));
+
+    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
+    const userMsg = calls[0][0].messages[1]?.content ?? '';
+    expect(userMsg).toMatch(/^Team: Platform\n/);
+
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('includes Team section in fallback summary when team flag is set', async () => {
+    const summary = await generateSummary('diff', [], [{ hash: 'a', message: 'm' }], {
+      from: 'HEAD~1',
+      team: 'Revenue Cloud',
+    });
+    expect(summary).toContain('## Team\nRevenue Cloud');
+  });
+
+  it('includes Team in fallback from METADATA_AUDIT_TEAM when flag unset', async () => {
+    process.env.METADATA_AUDIT_TEAM = '  CI Team  ';
+    const summary = await generateSummary('diff', [], [{ hash: 'a', message: 'm' }], { from: 'HEAD~1' });
+    expect(summary).toContain('## Team\nCI Team');
+    delete process.env.METADATA_AUDIT_TEAM;
+  });
+
+  it('includes Team in OpenAI user message from METADATA_AUDIT_TEAM', async () => {
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'ok' } }],
+    }));
+
+    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.METADATA_AUDIT_TEAM = 'Squad A';
+
+    await generateSummary('diff', [], [], { from: 'HEAD~1' }, async () => ({
+      chat: { completions: { create: openAiCreate } },
+    }));
+
+    const calls = openAiCreate.mock.calls as unknown as Array<[{ messages: Array<{ content: string }> }]>;
+    expect(calls[0][0].messages[1]?.content).toMatch(/^Team: Squad A\n/);
+
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.METADATA_AUDIT_TEAM;
   });
 
   it('returns all commits when no filter is provided', () => {
@@ -93,6 +148,10 @@ describe('sgai metadata summary generator', () => {
     ];
 
     expect(filterCommits(commits, 'fix')).toEqual([{ hash: 'b2', message: 'Fix bug' }]);
+  });
+
+  it('throws when message-filter is not a valid regular expression', () => {
+    expect(() => filterCommits([{ hash: '1', message: 'x' }], '[')).toThrow(/Invalid commit message filter/);
   });
 
   it('creates a git client for a cwd', () => {
