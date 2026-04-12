@@ -33,7 +33,8 @@
     "/lib",
     "/messages",
     "/oclif.manifest.json",
-    "/oclif.lock"
+    "/oclif.lock",
+    "/CHANGELOG.md"
   ],
   "keywords": [
     "force",
