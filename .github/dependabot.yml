@@ -13,10 +13,8 @@ updates:
       prefix: fix(deps)
       # no release for dev-deps
       prefix-development: chore(dev-deps)
-    ignore:
-      - dependency-name: '@salesforce/dev-scripts'
-      - dependency-name: '*'
-        update-types: ['version-update:semver-major']
+    allow:
+      - dependency-name: 'openai'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
