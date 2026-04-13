@@ -92,6 +92,8 @@ $env:LLM_DEFAULT_HEADERS = '{"Authorization":"Bearer <token>","x-tenant-id":"sal
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
+![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
+
 ### OpenAI (api.openai.com)
 
 Set `OPENAI_API_KEY` only, or `LLM_API_KEY` if you standardize on `LLM_*` in your environment.
