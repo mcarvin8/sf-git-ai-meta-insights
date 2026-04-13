@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v1.1.1...v2.0.0) (2026-04-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* integrate @mcarvin/smart-diff and replace CLI path/commit filterflags, enforce LLM summary ([#11](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/11))
+
+### Features
+
+* integrate @mcarvin/smart-diff and replace CLI path/commit filterflags, enforce LLM summary ([#11](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/11)) ([e8ee3c5](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/e8ee3c5ea725aeae60ab25459bd1f76442c8dbd5))
+
 ## [1.1.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v1.1.0...v1.1.1) (2026-04-12)
 
 
