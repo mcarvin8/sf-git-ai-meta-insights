@@ -2,12 +2,16 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
+import { shouldUseLlmGateway } from '@mcarvin/smart-diff';
 import { beforeAll, afterAll, describe, it, expect } from '@jest/globals';
 
 /** TestSession + git setup often exceeds Jest's default 5s hook timeout on CI and Windows. */
 const NUT_TIMEOUT_MS = 120_000;
 
-describe('sgai metadata summarize NUT', () => {
+/** Same gate as `sgai metadata summarize`: needs API key, base URL, or LLM default headers. */
+const canCallLlm = shouldUseLlmGateway();
+
+(canCallLlm ? describe : describe.skip)('sgai metadata summarize NUT', () => {
   let session: TestSession;
 
   beforeAll(async () => {
