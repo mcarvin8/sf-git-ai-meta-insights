@@ -1,42 +1,11 @@
 import { writeFile, rm, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { SimpleGit } from 'simple-git';
 import { describe, it, expect, jest } from '@jest/globals';
+import type { DiffFileSummary } from '@mcarvin/smart-diff';
+import { getDiffSummary, getRepoRoot } from '@mcarvin/smart-diff';
 
-import { getDiffSummary, parseDiffSummary } from '../../src/git/gitDiff.js';
-
-describe('parseDiffSummary', () => {
-  it('aggregates multiple lines for the same path (merge branch)', () => {
-    const out = parseDiffSummary(
-      'M\t1\t2\tforce-app/Foo.cls\n' + 'M\t3\t4\tforce-app/Foo.cls\n' + 'M\t0\t0\tforce-app/Bar.cls\n'
-    );
-    expect(out.totalFiles).toBe(2);
-    const foo = out.files.find((f) => f.path === 'force-app/Foo.cls');
-    expect(foo).toEqual(
-      expect.objectContaining({
-        path: 'force-app/Foo.cls',
-        status: 'modified',
-        additions: 4,
-        deletions: 6,
-      })
-    );
-  });
-
-  it('parses rename lines and skips rows with unexpected column count', () => {
-    const out = parseDiffSummary(
-      'R100\t0\t0\tforce-app/Old.cls\tforce-app/New.cls\n' + 'M\t1\t2\tforce-app/X.cls\n' + 'M\t1\t2\ta\tb\tc\td\n'
-    );
-    expect(out.totalFiles).toBe(2);
-    const renamed = out.files.find((f) => f.path === 'force-app/New.cls');
-    expect(renamed).toMatchObject({
-      path: 'force-app/New.cls',
-      status: 'renamed',
-      oldPath: 'force-app/Old.cls',
-      newPath: 'force-app/New.cls',
-    });
-  });
-});
+type GitClient = Parameters<typeof getRepoRoot>[0];
 
 describe('getDiffSummary merge and status coverage', () => {
   it('merges name-status across commits when the same path gains oldPath (M then R)', async () => {
@@ -61,7 +30,7 @@ describe('getDiffSummary merge and status coverage', () => {
         return '';
       }),
       revparse: jest.fn(async () => tmpRoot),
-    } as unknown as SimpleGit;
+    } as unknown as GitClient;
 
     const summary = await getDiffSummary(
       git,
@@ -72,11 +41,11 @@ describe('getDiffSummary merge and status coverage', () => {
         { hash: 'c2', message: 'm2' },
       ],
       true,
-      undefined,
+      { includeFolders: ['force-app'] },
       tmpRoot
     );
 
-    const x = summary.files.find((f) => f.path === 'force-app/X.cls');
+    const x = summary.files.find((f: DiffFileSummary) => f.path === 'force-app/X.cls');
     expect(x).toMatchObject({
       path: 'force-app/X.cls',
       oldPath: 'force-app/Old.cls',
@@ -116,31 +85,31 @@ describe('getDiffSummary merge and status coverage', () => {
         return '';
       }),
       revparse: jest.fn(async () => tmpRoot),
-    } as unknown as SimpleGit;
+    } as unknown as GitClient;
 
-    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, undefined, tmpRoot);
+    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, { includeFolders: ['force-app'] }, tmpRoot);
 
-    expect(summary.files.map((f) => f.path).sort()).toEqual(
+    expect(summary.files.map((f: DiffFileSummary) => f.path).sort()).toEqual(
       ['force-app/Copy.cls', 'force-app/Gone.cls', 'force-app/Twisted.cls', 'force-app/Unmerged.cls'].sort()
     );
 
-    expect(summary.files.find((f) => f.path === 'force-app/Gone.cls')).toMatchObject({
+    expect(summary.files.find((f: DiffFileSummary) => f.path === 'force-app/Gone.cls')).toMatchObject({
       status: 'deleted',
       additions: 0,
       deletions: 0,
     });
-    expect(summary.files.find((f) => f.path === 'force-app/Copy.cls')).toMatchObject({
+    expect(summary.files.find((f: DiffFileSummary) => f.path === 'force-app/Copy.cls')).toMatchObject({
       status: 'copied',
       additions: 2,
       deletions: 2,
       oldPath: 'force-app/Src.cls',
     });
-    expect(summary.files.find((f) => f.path === 'force-app/Twisted.cls')).toMatchObject({
+    expect(summary.files.find((f: DiffFileSummary) => f.path === 'force-app/Twisted.cls')).toMatchObject({
       status: 'type-changed',
       additions: 1,
       deletions: 0,
     });
-    expect(summary.files.find((f) => f.path === 'force-app/Unmerged.cls')).toMatchObject({
+    expect(summary.files.find((f: DiffFileSummary) => f.path === 'force-app/Unmerged.cls')).toMatchObject({
       status: 'unknown',
       additions: 0,
       deletions: 0,

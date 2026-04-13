@@ -6,7 +6,7 @@
 
 ## Overview
 
-This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown summary file. When an **OpenAI-compatible** LLM gateway is configured (see below), it calls that HTTP API; otherwise it falls back to a local summary.
+This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using an **OpenAI-compatible** LLM. A configured gateway (API key and/or base URL and/or default headers—see below) is **required**; there is no offline or local-only summary.
 
 ## Installation
 
@@ -24,11 +24,13 @@ Summarize metadata changes between two Git refs and write the generated summary 
 
 - `--from` `-f` (**required**) Start reference for the git diff range. You must pass an explicit ref (for example `HEAD~1`, a tag, or a commit hash); there is no default.
 - `--to` `-t` End reference for the git diff range. Defaults to `HEAD`.
-- `--message-filter` `-m` Regex filter for commit messages.
+- `--commit-message-include` `-m` Include commits whose messages match any of these regex patterns (repeatable, OR).
+- `--commit-message-exclude` Exclude commits whose messages match any of these regex patterns (repeatable, OR).
+- `--include-package-directory` Extra repo-relative package paths merged with `sfdx-project.json` package directories (repeatable).
+- `--exclude-package-directory` `-i` Exclude package paths: removes matching entries from the configured package list and adds git `:(exclude)` pathspecs for the diff (repeatable).
 - `--team` Optional team or squad label for the summary (also supported via `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM`).
 - `--output` `-p` Output file path for the generated summary. Defaults to `metadata-summary.md`.
 - `--model` OpenAI model used for the summary. Defaults to `gpt-4o-mini`.
-- `--ignore-package-directory` `-i` Ignore package directories defined in `sfdx-project.json`. This flag may be provided multiple times.
 
 #### Examples
 
@@ -47,7 +49,7 @@ sf sgai metadata summarize --from HEAD~5 --to HEAD --output changes.md
 Summarize only commits whose messages match a regex:
 
 ```bash
-sf sgai metadata summarize --from main --to HEAD --message-filter "(feature|fix)"
+sf sgai metadata summarize --from main --to HEAD --commit-message-include "(feature|fix)"
 ```
 
 Use a custom OpenAI model:
@@ -60,12 +62,10 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD --model gpt-4o-mini
 
 - `sf` CLI installed
 - Node.js 20 or later
-- A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root
-- Optional: LLM configuration (see below)
+- **LLM gateway configuration** (see below)—at least one of `OPENAI_API_KEY` / `LLM_API_KEY`, `LLM_BASE_URL` / `OPENAI_BASE_URL`, or JSON in `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` so the OpenAI-compatible client can call your provider
+- A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root (unless you pass only `--include-package-directory` paths)
 
-This plugin depends on running inside an SFDX project because it reads `packageDirectories` from `sfdx-project.json` to determine which metadata files from the git diff to include in the summary.
-
-If no LLM gateway is configured, the plugin still generates a local fallback summary.
+This plugin reads `packageDirectories` from `sfdx-project.json` (when present) to scope the git diff, merges optional CLI include/exclude paths, then sends context to the model.
 
 The plugin uses the official Node [`openai`](https://www.npmjs.com/package/openai) client: optional **`baseURL`**, optional **`defaultHeaders`** (JSON), and an API key string the SDK expects.
 
@@ -105,7 +105,7 @@ Set `OPENAI_API_KEY` only, or `LLM_API_KEY` if you standardize on `LLM_*` in you
 
 ### Diff size (context window)
 
-The full unified diff is capped before it is sent to the LLM so requests stay within typical context limits (for example 128k tokens). If you see errors about context length exceeded, narrow `--from`/`--to`, use `--message-filter`, or lower `--max-diff-chars` / `LLM_MAX_DIFF_CHARS`. Only raise the cap when your model and gateway allow a larger context.
+The full unified diff is capped before it is sent to the LLM so requests stay within typical context limits (for example 128k tokens). If you see errors about context length exceeded, narrow `--from`/`--to`, use `--commit-message-include` / `--commit-message-exclude`, or lower `--max-diff-chars` / `LLM_MAX_DIFF_CHARS`. Only raise the cap when your model and gateway allow a larger context.
 
 ## License
 

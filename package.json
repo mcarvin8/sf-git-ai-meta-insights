@@ -3,11 +3,10 @@
   "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
   "version": "1.1.1",
   "dependencies": {
+    "@mcarvin/smart-diff": "1.0.3",
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
-    "@salesforce/sf-plugins-core": "^12",
-    "openai": "^6.34.0",
-    "simple-git": "^3.20.0"
+    "@salesforce/sf-plugins-core": "^12"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
@@ -154,7 +153,8 @@
     "test:only": {
       "command": "jest --coverage",
       "env": {
-        "FORCE_COLOR": "2"
+        "FORCE_COLOR": "2",
+        "NODE_OPTIONS": "--experimental-vm-modules"
       },
       "files": [
         "test/**/*.ts",
