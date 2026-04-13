@@ -14,7 +14,6 @@ export default {
       statements: 95,
     },
   },
-  extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '(.+)\\.js': '$1',
     '^lodash-es$': 'lodash',
@@ -25,7 +24,12 @@ export default {
     '\\.[jt]sx?$': [
       'ts-jest',
       {
-        tsconfig: './tsconfig.json',
+        tsconfig: {
+          module: 'CommonJS',
+          moduleResolution: 'node',
+          esModuleInterop: true,
+          isolatedModules: true,
+        },
       },
     ],
   },

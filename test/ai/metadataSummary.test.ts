@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { generateSummary, resolveLlmMaxDiffChars, truncateUnifiedDiffForLlm } from '../../src/ai/metadataSummary.js';
+import { generateSummary, resolveLlmMaxDiffChars, truncateUnifiedDiffForLlm } from '@mcarvin/smart-diff';
 
 describe('metadataSummary helpers', () => {
   beforeEach(() => {
@@ -44,7 +44,7 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
     delete process.env.OPENAI_API_KEY;
   });
 
-  it('includes message-filter branch in OpenAI user content', async () => {
+  it('includes commit message include regexes in OpenAI user content', async () => {
     const openAiCreate = jest.fn(async () => ({
       choices: [{ message: { content: 'ok' } }],
     }));
@@ -55,7 +55,7 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
       'diff --git a/x b/x\n',
       ['force-app/main/default/classes/Foo.cls'],
       [{ hash: 'aaaaaaaaaaaaaaaa', message: 'fix stuff' }],
-      { from: 'HEAD~2', to: 'HEAD', messageFilter: '(fix|feat)' },
+      { from: 'HEAD~2', to: 'HEAD', commitMessageIncludeRegexes: ['(fix|feat)'] },
       async () => ({
         chat: { completions: { create: openAiCreate } },
       })
@@ -64,7 +64,8 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
     const calls = openAiCreate.mock.calls as unknown[];
     const userMsg =
       ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
-    expect(userMsg).toContain('Commit message filter (regex): (fix|feat)');
+    expect(userMsg).toContain('Commit message include regexes (OR):');
+    expect(userMsg).toContain('(fix|feat)');
     expect(userMsg).toContain('concatenated per-commit unified patches');
 
     delete process.env.OPENAI_API_KEY;
@@ -161,13 +162,21 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
     delete process.env.OPENAI_API_KEY;
   });
 
-  it('includes structured JSON block in fallback summary when diffSummary is provided', async () => {
-    const summary = await generateSummary(
+  it('passes structured diff summary into the model user message when diffSummary is provided', async () => {
+    const openAiCreate = jest.fn(async () => ({
+      choices: [{ message: { content: 'model output' } }],
+    }));
+
+    process.env.OPENAI_API_KEY = 'k';
+
+    await generateSummary(
       'diff snippet',
       ['force-app/main/default/classes/Foo.cls'],
       [{ hash: 'aaaaaaaaaaaaaaaa', message: 'feat' }],
       { from: 'HEAD~1', to: 'HEAD' },
-      undefined,
+      async () => ({
+        chat: { completions: { create: openAiCreate } },
+      }),
       {
         files: [{ path: 'force-app/main/default/classes/Foo.cls', status: 'modified', additions: 1, deletions: 0 }],
         totalFiles: 1,
@@ -176,9 +185,13 @@ describe('metadataSummary generateSummary LLM edge cases', () => {
       }
     );
 
-    expect(summary).toContain('## Structured Git Context');
-    expect(summary).toContain('```json');
-    expect(summary).toContain('"path": "force-app/main/default/classes/Foo.cls"');
+    const calls = openAiCreate.mock.calls as unknown[];
+    const userMsg =
+      ((calls[0] as unknown[])?.[0] as { messages?: Array<{ content?: string }> })?.messages?.[1]?.content ?? '';
+    expect(userMsg).toContain('=== Structured git context (JSON summary) ===');
+    expect(userMsg).toContain('"path": "force-app/main/default/classes/Foo.cls"');
+
+    delete process.env.OPENAI_API_KEY;
   });
 
   it('callOpenAi returns default message when content is only whitespace', async () => {
