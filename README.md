@@ -93,6 +93,7 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
 ![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
+![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
 
 ### OpenAI (api.openai.com)
 
