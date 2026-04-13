@@ -64,6 +64,7 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD --model gpt-4o-mini
 - Node.js 20 or later
 - **LLM gateway configuration** (see below)—at least one of `OPENAI_API_KEY` / `LLM_API_KEY`, `LLM_BASE_URL` / `OPENAI_BASE_URL`, or JSON in `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` so the OpenAI-compatible client can call your provider
 - A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root (unless you pass only `--include-package-directory` paths)
+- [Git Bash](https://git-scm.com/install/)
 
 This plugin reads `packageDirectories` from `sfdx-project.json` (when present) to scope the git diff, merges optional CLI include/exclude paths, then sends context to the model.
 
