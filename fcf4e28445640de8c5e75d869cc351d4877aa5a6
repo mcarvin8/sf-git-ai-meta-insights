@@ -1,0 +1,23 @@
+test/commands/sgai/metadata/summarize.nut.ts
+  e0f2c29e0792e91d 5,11-12,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "fcf4e28445640de8c5e75d869cc351d4877aa5a6",
+  "prompts": {
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 4,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
