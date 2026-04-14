@@ -3,7 +3,7 @@
 [![NPM](https://img.shields.io/npm/v/sf-git-ai-meta-insights.svg?label=sf-git-ai-meta-insights)](https://www.npmjs.com/package/sf-git-ai-meta-insights)
 [![Downloads/week](https://img.shields.io/npm/dw/sf-git-ai-meta-insights.svg)](https://npmjs.org/package/sf-git-ai-meta-insights)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/salesforcecli/sf-git-ai-meta-insights/main/LICENSE.md)
-[![Code Coverage](https://qlty.sh/gh/mcarvin8/projects/sf-git-ai-meta-insights/coverage.svg)](https://qlty.sh/gh/mcarvin8/projects/sf-git-ai-meta-insights)
+[![codecov](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights/graph/badge.svg?token=N5FKE0JPHN)](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights)
 
 `sf-git-ai-meta-insights` is an `sf` plugin that generates AI-assisted summaries of Salesforce metadata changes from a git diff.
 
