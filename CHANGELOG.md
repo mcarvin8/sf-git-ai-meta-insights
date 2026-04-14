@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.0.0...v2.0.1) (2026-04-14)
+
+
+### Bug Fixes
+
+* update short chars for include and exclude flags ([66934fa](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/66934fa7c5f10c90bc3e4bf83ff972c1b3e75638))
+
 ## [2.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v1.1.1...v2.0.0) (2026-04-13)
 
 
