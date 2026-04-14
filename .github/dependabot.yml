@@ -14,7 +14,7 @@ updates:
       # no release for dev-deps
       prefix-development: chore(dev-deps)
     allow:
-      - dependency-name: 'openai'
+      - dependency-name: '@mcarvin/smart-diff'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
