@@ -3,16 +3,9 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'monthly'
-    versioning-strategy: 'increase'
-    open-pull-requests-limit: 5
-    pull-request-branch-name:
-      separator: '-'
+      interval: 'weekly'
     commit-message:
-      # cause a release for non-dev-deps
-      prefix: fix(deps)
-      # no release for dev-deps
-      prefix-development: chore(dev-deps)
+      prefix: "feat(smart-diff)"
     allow:
       - dependency-name: '@mcarvin/smart-diff'
   - package-ecosystem: 'github-actions'
