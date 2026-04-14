@@ -1,0 +1,40 @@
+README.md
+  b79aac679628b365 28-30
+src/commands/sgai/metadata/summarize.ts
+  b79aac679628b365 181,188,195
+messages/sgai.metadata.summarize.md
+  b79aac679628b365 47,55,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "66934fa7c5f10c90bc3e4bf83ff972c1b3e75638",
+  "prompts": {
+    "b79aac679628b365": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c32ef6c0-41d9-4a61-b49d-70286922f66a",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 7,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    },
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
