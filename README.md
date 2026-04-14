@@ -111,6 +111,10 @@ Set `OPENAI_API_KEY` only, or `LLM_API_KEY` if you standardize on `LLM_*` in you
 
 The full unified diff is capped before it is sent to the LLM so requests stay within typical context limits (for example 128k tokens). If you see errors about context length exceeded, narrow `--from`/`--to`, use `--commit-message-include` / `--commit-message-exclude`, or lower `--max-diff-chars` / `LLM_MAX_DIFF_CHARS`. Only raise the cap when your model and gateway allow a larger context.
 
+## Built With
+
+The plugin's core logic is imported from [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff) library, which is a general solution to turn git diffs from any git repository into OpenAI summaries.
+
 ## License
 
 MIT
