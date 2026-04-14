@@ -44,7 +44,7 @@ Exclude commits whose messages match any of these regular expressions (OR).
 
 # flags.commit-message-exclude.description
 
-If a commit message matches any exclude pattern, that commit is dropped before the diff is built. Can be set multiple times. Applied after include matching when both are set.
+If a commit message matches any exclude pattern, that commit is dropped before the diff is built. Can be set multiple times. Applied after include matching when both are set. Use `-e` / `--commit-message-exclude` once per pattern.
 
 # flags.include-package-directory.summary
 
@@ -52,7 +52,7 @@ Additional package directories to include in the diff.
 
 # flags.include-package-directory.description
 
-Repo-relative paths (forward slashes), merged with package directories read from `sfdx-project.json` after `--exclude-package-directory` is applied. Use to add directories that are not listed in `sfdx-project.json`, or to supply the only include paths when the project file is missing or empty (pass at least one value).
+Repo-relative paths (forward slashes), merged with package directories read from `sfdx-project.json` after `--exclude-package-directory` is applied. Use to add directories that are not listed in `sfdx-project.json`, or to supply the only include paths when the project file is missing or empty (pass at least one value). Use `-i` / `--include-package-directory` once per path.
 
 # flags.exclude-package-directory.summary
 
@@ -60,7 +60,7 @@ Package directories to exclude from the diff.
 
 # flags.exclude-package-directory.description
 
-Repo-relative paths (forward slashes). Each value removes matching entries from the `sfdx-project.json` package list (same as the former `--ignore-package-directory` behavior) and is also passed to the underlying git diff as an excluded pathspec (`:(exclude)path`), so you can drop whole packages or narrow out subtrees (for example generated folders under a package). Repeatable; `-i` is a short form.
+Repo-relative paths (forward slashes). Each value removes matching entries from the `sfdx-project.json` package list (same as the former `--ignore-package-directory` behavior) and is also passed to the underlying git diff as an excluded pathspec (`:(exclude)path`), so you can drop whole packages or narrow out subtrees (for example generated folders under a package). Repeatable; `-x` is a short form.
 
 # flags.team.summary
 

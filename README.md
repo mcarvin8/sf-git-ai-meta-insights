@@ -25,9 +25,9 @@ Summarize metadata changes between two Git refs and write the generated summary 
 - `--from` `-f` (**required**) Start reference for the git diff range. You must pass an explicit ref (for example `HEAD~1`, a tag, or a commit hash); there is no default.
 - `--to` `-t` End reference for the git diff range. Defaults to `HEAD`.
 - `--commit-message-include` `-m` Include commits whose messages match any of these regex patterns (repeatable, OR).
-- `--commit-message-exclude` Exclude commits whose messages match any of these regex patterns (repeatable, OR).
-- `--include-package-directory` Extra repo-relative package paths merged with `sfdx-project.json` package directories (repeatable).
-- `--exclude-package-directory` `-i` Exclude package paths: removes matching entries from the configured package list and adds git `:(exclude)` pathspecs for the diff (repeatable).
+- `--commit-message-exclude` `-e` Exclude commits whose messages match any of these regex patterns (repeatable, OR).
+- `--include-package-directory` `-i` Extra repo-relative package paths merged with `sfdx-project.json` package directories (repeatable).
+- `--exclude-package-directory` `-x` Exclude package paths: removes matching entries from the configured package list and adds git `:(exclude)` pathspecs for the diff (repeatable).
 - `--team` Optional team or squad label for the summary (also supported via `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM`).
 - `--output` `-p` Output file path for the generated summary. Defaults to `metadata-summary.md`.
 - `--model` OpenAI model used for the summary. Defaults to `gpt-4o-mini`.

@@ -178,19 +178,21 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
     'commit-message-exclude': Flags.string({
       summary: messages.getMessage('flags.commit-message-exclude.summary'),
       description: messages.getMessage('flags.commit-message-exclude.description'),
+      char: 'e',
       required: false,
       multiple: true,
     }),
     'include-package-directory': Flags.string({
       summary: messages.getMessage('flags.include-package-directory.summary'),
       description: messages.getMessage('flags.include-package-directory.description'),
+      char: 'i',
       required: false,
       multiple: true,
     }),
     'exclude-package-directory': Flags.string({
       summary: messages.getMessage('flags.exclude-package-directory.summary'),
       description: messages.getMessage('flags.exclude-package-directory.description'),
-      char: 'i',
+      char: 'x',
       required: false,
       multiple: true,
     }),
