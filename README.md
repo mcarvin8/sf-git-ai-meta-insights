@@ -9,7 +9,7 @@
 
 ## Overview
 
-This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using an **OpenAI-compatible** LLM. A configured gateway (API key and/or base URL and/or default headers—see below) is **required**.
+This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using an **OpenAI-compatible** LLM. A configured gateway (API key and/or base URL and/or default headers) is **required**.
 
 ## Installation
 
@@ -72,15 +72,21 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD --model gpt-4o-mini
 
 - `sf` CLI installed
 - Node.js 20 or later
-- **LLM gateway configuration** (see below)—at least one of `OPENAI_API_KEY` / `LLM_API_KEY`, `LLM_BASE_URL` / `OPENAI_BASE_URL`, or JSON in `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` so the OpenAI-compatible client can call your provider
+- **OpenAI configuration**—see below
 - A Salesforce DX project repository with a `sfdx-project.json` file present in the repo root (unless you pass only `--include-package-directory` paths)
 - [Git Bash](https://git-scm.com/install/)
 
 This plugin reads `packageDirectories` from `sfdx-project.json` (when present) to scope the git diff, merges optional CLI include/exclude paths, then sends context to the model.
 
-The plugin uses the official Node [`openai`](https://www.npmjs.com/package/openai) client: optional **`baseURL`**, optional **`defaultHeaders`** (JSON), and an API key string the SDK expects.
+### OpenAI Configuration
 
-### `LLM_*` overrides `OPENAI_*`
+The plugin uses the official Node [`openai`](https://www.npmjs.com/package/openai) client: 
+
+- **`apiKey`** is required by the client but can be null if you set headers
+- optional **`baseURL`**
+- optional **`defaultHeaders`** (JSON)
+
+> `LLM_*` overrides `OPENAI_*` if both are found
 
 | Variable                 | Purpose                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------- |
@@ -95,7 +101,7 @@ The OpenAI Node client always sends `Authorization: Bearer <apiKey>`. If you put
 
 Prefer setting `LLM_API_KEY` (or `OPENAI_API_KEY`) to your `sk-...` token when your gateway documents API-key auth that way.
 
-**PowerShell: company gateway**
+**PowerShell example with a company gateway**
 
 ```powershell
 $env:LLM_BASE_URL = "https://llm-gateway.mycompany.example/v1"
@@ -106,15 +112,11 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD
 ![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
 ![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
 
-### OpenAI (api.openai.com)
-
-Set `OPENAI_API_KEY` only, or `LLM_API_KEY` if you standardize on `LLM_*` in your environment.
-
-### Token limits
+#### Token limits
 
 `OPENAI_MAX_TOKENS` caps `max_tokens`; `LLM_MAX_TOKENS` overrides it when set.
 
-### Diff size (context window)
+#### Diff size
 
 The full unified diff is capped before it is sent to the LLM so requests stay within typical context limits (for example 128k tokens). If you see errors about context length exceeded, narrow `--from`/`--to`, use `--commit-message-include` / `--commit-message-exclude`, or lower `--max-diff-chars` / `LLM_MAX_DIFF_CHARS`. Only raise the cap when your model and gateway allow a larger context.
 
