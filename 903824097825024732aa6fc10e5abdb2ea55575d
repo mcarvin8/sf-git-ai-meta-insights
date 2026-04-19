@@ -1,0 +1,26 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "903824097825024732aa6fc10e5abdb2ea55575d",
+  "prompts": {
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_b104b674256482": {
+      "author": "Matt Carvin"
+    }
+  }
+}
