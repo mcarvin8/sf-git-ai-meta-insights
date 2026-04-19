@@ -82,7 +82,7 @@ This plugin reads `packageDirectories` from `sfdx-project.json` (when present) t
 
 ### OpenAI Configuration
 
-The plugin uses the official Node [`openai`](https://www.npmjs.com/package/openai) client: 
+The plugin uses the official Node [`openai`](https://www.npmjs.com/package/openai) client:
 
 - **`apiKey`** is required by the client but can be null if you set headers
 - optional **`baseURL`**
@@ -101,7 +101,7 @@ The plugin uses the official Node [`openai`](https://www.npmjs.com/package/opena
 | `OPENAI_MAX_DIFF_CHARS`  | Max size of unified diff text sent to the model (default ~120k characters).                 |
 | `LLM_MAX_DIFF_CHARS`     | Overrides `OPENAI_MAX_DIFF_CHARS` when set.                                                 |
 | `OPENAI_MAX_TOKENS`      | Max completion tokens (default 4000).                                                       |
-| `LLM_MAX_TOKENS`        | Overrides `OPENAI_MAX_TOKENS` when set.                                                  |
+| `LLM_MAX_TOKENS`         | Overrides `OPENAI_MAX_TOKENS` when set.                                                     |
 
 The OpenAI Node client always sends `Authorization: Bearer <apiKey>`. If you put a raw `sk-...` value in `LLM_DEFAULT_HEADERS` / `OPENAI_DEFAULT_HEADERS` as `Authorization` **without** `Bearer`, many gateways treat that as the final header and return errors like `401` with `param: api_key`. When `LLM_API_KEY` / `OPENAI_API_KEY` is unset, this plugin detects `Authorization: sk-...` or `Authorization: Bearer sk-...` in the merged JSON headers, moves that token into the client `apiKey` (so the SDK sends a proper `Bearer` value), and removes the duplicate `Authorization` entry from `defaultHeaders` while keeping your other headers (for example `x-alfa-rbac`).
 
