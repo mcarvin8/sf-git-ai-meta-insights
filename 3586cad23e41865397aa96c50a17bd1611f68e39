@@ -1,0 +1,36 @@
+README.md
+  2456dbe3f92eadf4 30,32-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "3586cad23e41865397aa96c50a17bd1611f68e39",
+  "prompts": {
+    "2456dbe3f92eadf4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9cedd3ed-172e-4095-a472-4ad9ced871cd",
+        "model": "auto-high"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 14,
+      "accepted_lines": 15,
+      "overriden_lines": 2
+    },
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
