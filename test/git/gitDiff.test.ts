@@ -32,18 +32,17 @@ describe('getDiffSummary merge and status coverage', () => {
       revparse: jest.fn(async () => tmpRoot),
     } as unknown as GitClient;
 
-    const summary = await getDiffSummary(
-      git,
-      'a',
-      'b',
-      [
+    const summary = await getDiffSummary(git, {
+      from: 'a',
+      to: 'b',
+      commits: [
         { hash: 'c1', message: 'm1' },
         { hash: 'c2', message: 'm2' },
       ],
-      true,
-      { includeFolders: ['force-app'] },
-      tmpRoot
-    );
+      filterByCommits: true,
+      pathFilter: { includeFolders: ['force-app'] },
+      repoRootOverride: tmpRoot,
+    });
 
     const x = summary.files.find((f: DiffFileSummary) => f.path === 'force-app/X.cls');
     expect(x).toMatchObject({
@@ -87,7 +86,14 @@ describe('getDiffSummary merge and status coverage', () => {
       revparse: jest.fn(async () => tmpRoot),
     } as unknown as GitClient;
 
-    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, { includeFolders: ['force-app'] }, tmpRoot);
+    const summary = await getDiffSummary(git, {
+      from: 'HEAD~1',
+      to: 'HEAD',
+      commits: [],
+      filterByCommits: false,
+      pathFilter: { includeFolders: ['force-app'] },
+      repoRootOverride: tmpRoot,
+    });
 
     expect(summary.files.map((f: DiffFileSummary) => f.path).sort()).toEqual(
       ['force-app/Copy.cls', 'force-app/Gone.cls', 'force-app/Twisted.cls', 'force-app/Unmerged.cls'].sort()

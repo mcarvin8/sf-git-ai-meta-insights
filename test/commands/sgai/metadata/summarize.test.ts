@@ -38,9 +38,14 @@ describe('sgai metadata summary generator', () => {
   });
 
   it('generateSummary throws when no LLM gateway is configured and no client provider is passed', async () => {
-    await expect(generateSummary('diff --git a/foo b/foo\nindex 123..456', [], [], { from: 'HEAD~1' })).rejects.toThrow(
-      /No LLM gateway configured/
-    );
+    await expect(
+      generateSummary({
+        diffText: 'diff --git a/foo b/foo\nindex 123..456',
+        fileNames: [],
+        commits: [],
+        flags: { from: 'HEAD~1' },
+      })
+    ).rejects.toThrow(/No LLM gateway configured/);
   });
 
   it('includes commit message include regexes in the model user message when provided', async () => {
@@ -53,15 +58,15 @@ describe('sgai metadata summary generator', () => {
     const diffText = 'diff --git a/bar b/bar\nindex 999..000';
     const commits = [{ hash: '1234567890abcdef', message: 'Fix bug in metadata analyzer' }];
 
-    await generateSummary(
+    await generateSummary({
       diffText,
-      [],
+      fileNames: [],
       commits,
-      { from: 'HEAD~5', to: 'HEAD', commitMessageIncludeRegexes: ['Fix bug'] },
-      async () => ({
+      flags: { from: 'HEAD~5', to: 'HEAD', commitMessageIncludeRegexes: ['Fix bug'] },
+      openAiClientProvider: async () => ({
         chat: { completions: { create: openAiCreate } },
-      })
-    );
+      }),
+    });
 
     const calls = openAiCreate.mock.calls as unknown[];
     const userMsg =
@@ -82,9 +87,15 @@ describe('sgai metadata summary generator', () => {
     process.env.LLM_MAX_DIFF_CHARS = '20000';
     const hugeDiff = `diff --git a/x b/x\n${'y'.repeat(50_000)}`;
 
-    await generateSummary(hugeDiff, [], [{ hash: 'a', message: 'm' }], { from: 'HEAD~1' }, async () => ({
-      chat: { completions: { create: openAiCreate } },
-    }));
+    await generateSummary({
+      diffText: hugeDiff,
+      fileNames: [],
+      commits: [{ hash: 'a', message: 'm' }],
+      flags: { from: 'HEAD~1' },
+      openAiClientProvider: async () => ({
+        chat: { completions: { create: openAiCreate } },
+      }),
+    });
 
     const calls = openAiCreate.mock.calls as unknown[];
     const userMsg =
@@ -113,15 +124,15 @@ describe('sgai metadata summary generator', () => {
 
     process.env.OPENAI_API_KEY = 'test-key';
 
-    const summary = await generateSummary(
-      'diff --git a/b b/b\nindex 1..2',
-      ['force-app/main/default/classes/AccountProfile.cls'],
-      [{ hash: 'abcdef1234567890', message: 'Add metadata summary support' }],
-      { from: 'HEAD~1' },
-      async () => ({
+    const summary = await generateSummary({
+      diffText: 'diff --git a/b b/b\nindex 1..2',
+      fileNames: ['force-app/main/default/classes/AccountProfile.cls'],
+      commits: [{ hash: 'abcdef1234567890', message: 'Add metadata summary support' }],
+      flags: { from: 'HEAD~1' },
+      openAiClientProvider: async () => ({
         chat: { completions: { create: openAiCreate } },
-      })
-    );
+      }),
+    });
 
     expect(summary).toContain('AI generated summary');
     expect(openAiCreate).toHaveBeenCalled();
@@ -140,15 +151,15 @@ describe('sgai metadata summary generator', () => {
       choices: [{ message: { content: 'LLM-gated summary' } }],
     }));
 
-    const summary = await generateSummary(
-      'diff --git a/b b/b\n',
-      [],
-      [{ hash: 'abcdef1234567890', message: 'm' }],
-      { from: 'HEAD~1' },
-      async () => ({
+    const summary = await generateSummary({
+      diffText: 'diff --git a/b b/b\n',
+      fileNames: [],
+      commits: [{ hash: 'abcdef1234567890', message: 'm' }],
+      flags: { from: 'HEAD~1' },
+      openAiClientProvider: async () => ({
         chat: { completions: { create: openAiCreate } },
-      })
-    );
+      }),
+    });
 
     expect(summary).toContain('LLM-gated summary');
     expect(openAiCreate).toHaveBeenCalled();
@@ -161,9 +172,15 @@ describe('sgai metadata summary generator', () => {
 
     process.env.OPENAI_API_KEY = 'test-key';
 
-    await generateSummary('diff --git a/b b/b\n', [], [], { from: 'HEAD~1', team: '  Platform  ' }, async () => ({
-      chat: { completions: { create: openAiCreate } },
-    }));
+    await generateSummary({
+      diffText: 'diff --git a/b b/b\n',
+      fileNames: [],
+      commits: [],
+      flags: { from: 'HEAD~1', team: '  Platform  ' },
+      openAiClientProvider: async () => ({
+        chat: { completions: { create: openAiCreate } },
+      }),
+    });
 
     const calls = openAiCreate.mock.calls as unknown[];
     const userMsg =
@@ -227,7 +244,14 @@ describe('sgai metadata summary generator', () => {
       revparse: jest.fn(async () => tmpRoot),
     } as unknown as GitClient;
 
-    const summary = await getDiffSummary(git, 'HEAD~1', 'HEAD', [], false, { includeFolders: ['force-app'] }, tmpRoot);
+    const summary = await getDiffSummary(git, {
+      from: 'HEAD~1',
+      to: 'HEAD',
+      commits: [],
+      filterByCommits: false,
+      pathFilter: { includeFolders: ['force-app'] },
+      repoRootOverride: tmpRoot,
+    });
 
     expect(summary.totalFiles).toBe(3);
     expect(summary.totalAdditions).toBe(10);
@@ -285,15 +309,14 @@ describe('sgai metadata summary generator', () => {
       { hash: 'c1', message: 'commit 1' },
       { hash: 'c2', message: 'commit 2' },
     ];
-    const summary = await getDiffSummary(
-      git,
-      'HEAD~2',
-      'HEAD',
+    const summary = await getDiffSummary(git, {
+      from: 'HEAD~2',
+      to: 'HEAD',
       commits,
-      true,
-      { includeFolders: ['force-app'] },
-      tmpRoot
-    );
+      filterByCommits: true,
+      pathFilter: { includeFolders: ['force-app'] },
+      repoRootOverride: tmpRoot,
+    });
 
     expect(git.diff).toHaveBeenCalledTimes(4);
     expect(git.diff).toHaveBeenCalledWith(['--numstat', 'c1^!', '--', 'force-app']);
@@ -360,7 +383,14 @@ describe('sgai metadata summary generator', () => {
         diff: jest.fn(async () => 'diff'),
       } as unknown as GitClient;
 
-      await getDiff(git, 'HEAD~1', 'HEAD', [], false, { excludeFolders: ['force-app'] }, testRepoRoot);
+      await getDiff(git, {
+        from: 'HEAD~1',
+        to: 'HEAD',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(git.diff).toHaveBeenCalledWith(['HEAD~1..HEAD', '--', '.', ':(exclude)force-app']);
     });
@@ -371,15 +401,14 @@ describe('sgai metadata summary generator', () => {
         show: jest.fn(async () => ''),
       } as unknown as GitClient;
 
-      const files = await getChangedFiles(
-        git,
-        'HEAD~1',
-        'HEAD',
-        [],
-        false,
-        { excludeFolders: ['force-app', 'included-app'] },
-        testRepoRoot
-      );
+      const files = await getChangedFiles(git, {
+        from: 'HEAD~1',
+        to: 'HEAD',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app', 'included-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(files).toEqual([]);
     });
@@ -389,15 +418,14 @@ describe('sgai metadata summary generator', () => {
         diff: jest.fn(async () => 'patch'),
       } as unknown as GitClient;
 
-      const result = await getDiff(
-        git,
-        'HEAD~3',
-        'HEAD',
-        [{ hash: 'abcdef1', message: 'commit' }],
-        true,
-        { excludeFolders: ['force-app'] },
-        testRepoRoot
-      );
+      const result = await getDiff(git, {
+        from: 'HEAD~3',
+        to: 'HEAD',
+        commits: [{ hash: 'abcdef1', message: 'commit' }],
+        filterByCommits: true,
+        pathFilter: { excludeFolders: ['force-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(result).toBe('patch');
       expect(git.diff).toHaveBeenCalledWith(['abcdef1^!', '--', '.', ':(exclude)force-app']);
@@ -422,15 +450,14 @@ describe('sgai metadata summary generator', () => {
         }),
       } as unknown as GitClient;
 
-      const summary = await getDiffSummary(
-        git,
-        'HEAD~1',
-        'HEAD',
-        [],
-        false,
-        { excludeFolders: ['force-app'] },
-        testRepoRoot
-      );
+      const summary = await getDiffSummary(git, {
+        from: 'HEAD~1',
+        to: 'HEAD',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(summary.totalFiles).toBe(2);
       expect(summary.totalAdditions).toBe(10);
@@ -458,15 +485,14 @@ describe('sgai metadata summary generator', () => {
         diff: jest.fn(async () => ''),
       } as unknown as GitClient;
 
-      const result = await getDiff(
-        git,
-        'HEAD~3',
-        'HEAD',
-        [],
-        false,
-        { excludeFolders: ['force-app', 'included-app'] },
-        testRepoRoot
-      );
+      const result = await getDiff(git, {
+        from: 'HEAD~3',
+        to: 'HEAD',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app', 'included-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(result).toBe('');
     });
@@ -476,15 +502,14 @@ describe('sgai metadata summary generator', () => {
         diff: jest.fn(async () => 'included-app/main/changed.cls\n'),
       } as unknown as GitClient;
 
-      const files = await getChangedFiles(
-        git,
-        'HEAD~3',
-        'HEAD',
-        [],
-        false,
-        { excludeFolders: ['force-app'] },
-        testRepoRoot
-      );
+      const files = await getChangedFiles(git, {
+        from: 'HEAD~3',
+        to: 'HEAD',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(files).toEqual(['included-app/main/changed.cls']);
     });
@@ -494,15 +519,14 @@ describe('sgai metadata summary generator', () => {
         show: jest.fn(async () => 'force-app/x.cls\nincluded-app/x.cls\n'),
       } as unknown as GitClient;
 
-      const files = await getChangedFiles(
-        git,
-        'HEAD~3',
-        'HEAD',
-        [{ hash: 'abc', message: 'commit' }],
-        true,
-        { includeFolders: ['force-app', 'included-app'] },
-        testRepoRoot
-      );
+      const files = await getChangedFiles(git, {
+        from: 'HEAD~3',
+        to: 'HEAD',
+        commits: [{ hash: 'abc', message: 'commit' }],
+        filterByCommits: true,
+        pathFilter: { includeFolders: ['force-app', 'included-app'] },
+        repoRootOverride: testRepoRoot,
+      });
 
       expect(files).toEqual(['force-app/x.cls', 'included-app/x.cls']);
       expect(git.show).toHaveBeenCalled();
@@ -529,7 +553,13 @@ describe('sgai metadata summary generator', () => {
 
       const override = '/custom/root';
 
-      await getDiff(git, 'a', 'b', [], false, undefined, override);
+      await getDiff(git, {
+        from: 'a',
+        to: 'b',
+        commits: [],
+        filterByCommits: false,
+        repoRootOverride: override,
+      });
 
       expect(git.revparse).not.toHaveBeenCalled();
     });
@@ -590,15 +620,14 @@ describe('sgai metadata summary generator', () => {
         diff: jest.fn(async () => ''),
       } as unknown as GitClient;
 
-      const result = await getDiff(
-        git,
-        'a',
-        'b',
-        [],
-        false,
-        { excludeFolders: ['force-app', 'included-app'] },
-        '/repo'
-      );
+      const result = await getDiff(git, {
+        from: 'a',
+        to: 'b',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { excludeFolders: ['force-app', 'included-app'] },
+        repoRootOverride: '/repo',
+      });
 
       expect(result).toBe('');
     });
@@ -618,7 +647,14 @@ describe('sgai metadata summary generator', () => {
         revparse: jest.fn(async () => tmpRoot),
       } as unknown as GitClient;
 
-      await getDiff(git, 'a', 'b', [], false, { includeFolders: ['.'] }, tmpRoot);
+      await getDiff(git, {
+        from: 'a',
+        to: 'b',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { includeFolders: ['.'] },
+        repoRootOverride: tmpRoot,
+      });
 
       expect(git.diff).toHaveBeenCalled();
       const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
@@ -645,7 +681,14 @@ describe('sgai metadata summary generator', () => {
         revparse: jest.fn(async () => '/SHOULD-NOT-RUN'),
       } as unknown as GitClient;
 
-      await getDiff(git, 'x', 'y', [], false, { includeFolders: ['legacy-pkg'] }, tmpRoot);
+      await getDiff(git, {
+        from: 'x',
+        to: 'y',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { includeFolders: ['legacy-pkg'] },
+        repoRootOverride: tmpRoot,
+      });
 
       expect(git.revparse).not.toHaveBeenCalled();
       const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
@@ -673,7 +716,14 @@ describe('sgai metadata summary generator', () => {
         revparse: jest.fn(async () => tmpRoot),
       } as unknown as GitClient;
 
-      await getDiff(git, 'x', 'y', [], false, { includeFolders: ['force-app', 'extra-pkg'] }, tmpRoot);
+      await getDiff(git, {
+        from: 'x',
+        to: 'y',
+        commits: [],
+        filterByCommits: false,
+        pathFilter: { includeFolders: ['force-app', 'extra-pkg'] },
+        repoRootOverride: tmpRoot,
+      });
 
       const callArgs = (git.diff as jest.Mock).mock.calls[0][0] as string[];
       expect(callArgs).toContain('force-app');
@@ -701,18 +751,17 @@ describe('sgai metadata summary generator', () => {
         revparse: jest.fn(async () => tmpRoot),
       } as unknown as GitClient;
 
-      const result = await getDiff(
-        git,
-        'a',
-        'b',
-        [
+      const result = await getDiff(git, {
+        from: 'a',
+        to: 'b',
+        commits: [
           { hash: 'c1', message: 'm1' },
           { hash: 'c2', message: 'm2' },
         ],
-        true,
-        { includeFolders: ['included-app'] },
-        tmpRoot
-      );
+        filterByCommits: true,
+        pathFilter: { includeFolders: ['included-app'] },
+        repoRootOverride: tmpRoot,
+      });
 
       expect(result).toContain('patch-c1^!');
       expect(result).toContain('patch-c2^!');
