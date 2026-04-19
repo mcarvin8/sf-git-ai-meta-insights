@@ -43,6 +43,13 @@ Summarize changes since the previous commit:
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
+Summarize changes from the past week on main branch:
+
+```bash
+FROM=$(git log origin/main -1 --before="1 week ago" --pretty=format:%H)
+sf sgai metadata summarize --from "$FROM"  --to "origin/main"
+```
+
 Summarize a custom range and save to `changes.md`:
 
 ```bash
