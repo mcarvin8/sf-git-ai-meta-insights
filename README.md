@@ -96,6 +96,10 @@ The plugin uses the official Node [`openai`](https://www.npmjs.com/package/opena
 | `LLM_BASE_URL`           | Overrides `OPENAI_BASE_URL` when set.                                                       |
 | `OPENAI_DEFAULT_HEADERS` | JSON object of extra HTTP headers (string values only).                                     |
 | `LLM_DEFAULT_HEADERS`    | JSON object merged **on top of** `OPENAI_DEFAULT_HEADERS` (same header names are replaced). |
+| `OPENAI_MAX_DIFF_CHARS`  | Max size of unified diff text sent to the model (default ~120k characters).                 |
+| `LLM_MAX_DIFF_CHARS`     | Overrides `OPENAI_MAX_DIFF_CHARS` when set.                                                 |
+| `OPENAI_MAX_TOKENS`      | Max completion tokens (default 4000).                                                       |
+| `LLM_MAX_TOKENS`        | Overrides `OPENAI_MAX_TOKENS` when set.                                                  |
 
 The OpenAI Node client always sends `Authorization: Bearer <apiKey>`. If you put a raw `sk-...` value in `LLM_DEFAULT_HEADERS` / `OPENAI_DEFAULT_HEADERS` as `Authorization` **without** `Bearer`, many gateways treat that as the final header and return errors like `401` with `param: api_key`. When `LLM_API_KEY` / `OPENAI_API_KEY` is unset, this plugin detects `Authorization: sk-...` or `Authorization: Bearer sk-...` in the merged JSON headers, moves that token into the client `apiKey` (so the SDK sends a proper `Bearer` value), and removes the duplicate `Authorization` entry from `defaultHeaders` while keeping your other headers (for example `x-alfa-rbac`).
 
@@ -111,14 +115,6 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD
 
 ![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
 ![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
-
-#### Token limits
-
-`OPENAI_MAX_TOKENS` caps `max_tokens`; `LLM_MAX_TOKENS` overrides it when set.
-
-#### Diff size
-
-The full unified diff is capped before it is sent to the LLM so requests stay within typical context limits (for example 128k tokens). If you see errors about context length exceeded, narrow `--from`/`--to`, use `--commit-message-include` / `--commit-message-exclude`, or lower `--max-diff-chars` / `LLM_MAX_DIFF_CHARS`. Only raise the cap when your model and gateway allow a larger context.
 
 ## Built With
 
