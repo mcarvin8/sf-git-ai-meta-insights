@@ -11,6 +11,8 @@
 
 This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using an **OpenAI-compatible** LLM. A configured gateway (API key and/or base URL and/or default headers) is **required**.
 
+![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
+
 ## Installation
 
 ```bash
@@ -114,7 +116,6 @@ sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
 ![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
-![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
 
 ## Built With
 
