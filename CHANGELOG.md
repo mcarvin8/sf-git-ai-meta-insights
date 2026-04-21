@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.1.0...v2.2.0) (2026-04-21)
+
+
+### Features
+
+* **ai:** support all Vercel AI SDK providers via smart-diff v2 ([#16](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/16)) ([8be7458](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/8be7458111081e5cad3f07646b08346154f2401b))
+
 ## [2.1.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.0.1...v2.1.0) (2026-04-19)
 
 
