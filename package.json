@@ -3,10 +3,19 @@
   "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
   "version": "2.1.0",
   "dependencies": {
-    "@mcarvin/smart-diff": "1.1.0",
+    "@ai-sdk/amazon-bedrock": "^4.0.96",
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/cohere": "^3.0.30",
+    "@ai-sdk/deepseek": "^2.0.29",
+    "@ai-sdk/google": "^3.0.64",
+    "@ai-sdk/groq": "^3.0.35",
+    "@ai-sdk/mistral": "^3.0.30",
+    "@ai-sdk/xai": "^3.0.83",
+    "@mcarvin/smart-diff": "^2.0.0",
     "@oclif/core": "^4",
     "@salesforce/core": "^8",
-    "@salesforce/sf-plugins-core": "^12"
+    "@salesforce/sf-plugins-core": "^12",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

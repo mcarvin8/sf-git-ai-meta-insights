@@ -2,14 +2,14 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
-import { shouldUseLlmGateway } from '@mcarvin/smart-diff';
+import { isLlmProviderConfigured } from '@mcarvin/smart-diff';
 import { beforeAll, afterAll, describe, it, expect } from '@jest/globals';
 
 /** TestSession + git setup often exceeds Jest's default 5s hook timeout on CI and Windows. */
 const NUT_TIMEOUT_MS = 120_000;
 
-/** Same gate as `sgai metadata summarize`: needs API key, base URL, or LLM default headers. */
-const canCallLlm = shouldUseLlmGateway();
+/** Same gate as `sgai metadata summarize`: needs a configured Vercel AI SDK provider (API key, base URL, or LLM default headers). */
+const canCallLlm = isLlmProviderConfigured();
 
 (canCallLlm ? describe : describe.skip)('sgai metadata summarize NUT', () => {
   let session: TestSession;
@@ -49,11 +49,13 @@ const canCallLlm = shouldUseLlmGateway();
   }, NUT_TIMEOUT_MS);
 
   it(
-    'runs sgai metadata summarize and returns a summary header',
+    'runs sgai metadata summarize and returns a summary with the expected structure',
     async () => {
       execCmd('sgai metadata summarize --from HEAD~1 --to HEAD', { cwd: session.dir, ensureExitCode: 0 });
       const summary = await readFile(join(session.dir, 'metadata-summary.md'), 'utf8');
-      expect(summary).toContain('# Metadata Change Summary');
+      expect(summary.length).toBeGreaterThan(0);
+      expect(summary).toMatch(/^#\s+.*Metadata Change Summary/im);
+      expect(summary).toMatch(/##\s+Highlights/i);
     },
     NUT_TIMEOUT_MS
   );

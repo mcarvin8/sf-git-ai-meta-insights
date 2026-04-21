@@ -4,7 +4,7 @@ Generate an AI-powered summary of changed Salesforce metadata from a git diff.
 
 # description
 
-Summarize metadata changes between two Git refs using a configured OpenAI-compatible LLM (required—see environment variables below). Optionally filter commits by include/exclude message regexes, narrow paths with `--include-package-directory` / `--exclude-package-directory`, and write the model output to a markdown file.
+Summarize metadata changes between two Git refs using any LLM provider supported by the Vercel AI SDK — OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. A configured provider (API key, base URL, and/or default headers) is required — see the README for environment variables. Optionally filter commits by include/exclude message regexes, narrow paths with `--include-package-directory` / `--exclude-package-directory`, and write the model output to a markdown file.
 
 # errors.noPackageDirectories
 
@@ -68,7 +68,7 @@ Optional team or squad label for the summary.
 
 # flags.team.description
 
-When set, includes a team line in the OpenAI user prompt. If omitted, `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM` is used when set; otherwise no team is included.
+When set, includes a team line in the LLM user prompt. If omitted, `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM` is used when set; otherwise no team is included.
 
 # flags.output.summary
 
@@ -80,11 +80,11 @@ The path to the markdown file where the AI summary is written. Defaults to metad
 
 # flags.model.summary
 
-OpenAI model used for the summary.
+Chat model id used for the summary.
 
 # flags.model.description
 
-The OpenAI model to use when creating the AI-generated metadata summary.
+Override the chat model used when creating the AI-generated metadata summary. Must be a model id supported by the resolved LLM provider (for example `gpt-4o` for OpenAI, `claude-3-5-sonnet-latest` for Anthropic, `gemini-2.0-flash` for Google). When omitted, the plugin uses `LLM_MODEL` if set, otherwise the resolved provider's default model.
 
 # flags.max-diff-chars.summary
 

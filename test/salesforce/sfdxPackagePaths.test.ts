@@ -103,4 +103,38 @@ describe('readPackageDirectoryRelativePaths', () => {
     expect(paths).toEqual(['unpackaged']);
     await rm(tmpRoot, { recursive: true, force: true });
   });
+
+  it('returns an empty list when sfdx-project.json has no packageDirectories key', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-no-pkg-key-'));
+    await writeFile(join(tmpRoot, 'sfdx-project.json'), JSON.stringify({ name: 'project-without-packages' }), 'utf8');
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot);
+    expect(paths).toEqual([]);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('accepts plain string entries and ignores null/empty entries in packageDirectories', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-mixed-entries-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({
+        packageDirectories: ['force-app', null, { path: '' }, { path: '   ' }, '  ', { path: 'pkg-b' }],
+      }),
+      'utf8'
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot);
+    expect(paths).toEqual(['force-app', 'pkg-b']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('returns "." for a package directory that points at the repo root', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-root-pkg-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: '.' }] }),
+      'utf8'
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot);
+    expect(paths).toEqual(['.']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
 });
