@@ -137,8 +137,6 @@ $env:LLM_DEFAULT_HEADERS = '{"Authorization":"Bearer <token>","x-tenant-id":"sal
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
-![Command Example with Company Gateway](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/cmd-example.png)
-
 ## Built With
 
 The plugin's core logic is imported from the [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff) library, a general-purpose tool that turns git diffs from any repository into Markdown summaries using any Vercel AI SDK provider.
