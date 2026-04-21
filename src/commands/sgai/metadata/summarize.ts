@@ -6,8 +6,8 @@ import {
   createGitClient,
   filterCommitsByMessageRegexes,
   getCommits,
+  isLlmProviderConfigured,
   LLM_GATEWAY_REQUIRED_MESSAGE,
-  shouldUseLlmGateway,
   summarizeGitDiff,
 } from '@mcarvin/smart-diff';
 
@@ -212,7 +212,6 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       summary: messages.getMessage('flags.model.summary'),
       description: messages.getMessage('flags.model.description'),
       required: false,
-      default: 'gpt-4o-mini',
     }),
     'max-diff-chars': Flags.integer({
       summary: messages.getMessage('flags.max-diff-chars.summary'),
@@ -226,8 +225,8 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
 
     validateMaxDiffCharsRange(flags['max-diff-chars']);
 
-    if (!shouldUseLlmGateway()) {
-      throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmGateway');
+    if (!isLlmProviderConfigured()) {
+      throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
     }
 
     const from = flags.from;

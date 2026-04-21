@@ -4,6 +4,7 @@
     "outDir": "lib",
     "rootDir": "src",
     "sourceMap": true,
+    "lib": ["ES2023", "DOM"],
     "types": ["jest", "chai"]
   },
   "include": ["./src/**/*.ts"],
