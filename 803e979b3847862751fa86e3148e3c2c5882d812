@@ -1,0 +1,38 @@
+test/ai/openAiConfig.test.ts
+  2456dbe3f92eadf4 1,11-18
+test/commands/sgai/metadata/summarize.test.ts
+  2456dbe3f92eadf4 1,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "803e979b3847862751fa86e3148e3c2c5882d812",
+  "prompts": {
+    "2456dbe3f92eadf4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9cedd3ed-172e-4095-a472-4ad9ced871cd",
+        "model": "auto-high"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 11,
+      "total_deletions": 1308,
+      "accepted_lines": 11,
+      "overriden_lines": 0
+    },
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}

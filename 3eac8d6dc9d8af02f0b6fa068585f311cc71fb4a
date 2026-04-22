@@ -1,0 +1,43 @@
+jest.config.js
+  e0f2c29e0792e91d 27-32
+README.md
+  e0f2c29e0792e91d 9,27-30,52,65-66,68,108
+test/salesforce/metadataSummaryContext.test.ts
+  e0f2c29e0792e91d 1-2,4-8,10-12,14-17,19-22,24-28,30-33
+test/git/gitDiff.test.ts
+  e0f2c29e0792e91d 5-6,8,33,44,48,88,90,92,96,101,107,112
+messages/sgai.metadata.summarize.md
+  e0f2c29e0792e91d 7-15,39,49,51,53,55,57,59,61,63,71,99-100
+src/salesforce/sfdxPackagePaths.ts
+  e0f2c29e0792e91d 7-9,11-16,19,22
+test/salesforce/sfdxPackagePaths.test.ts
+  e0f2c29e0792e91d 1-10,12-17,19-28,30,32-33,35-36,38-46,48,50-51,53-55,57-63,65-71,73-79,81-91,93-106
+package.json
+  e0f2c29e0792e91d 9,156-157
+test/ai/metadataSummary.test.ts
+  e0f2c29e0792e91d 2,47,58,67-68,165-172,177-179,188-192,194
+src/ai/openAiConfig.ts
+  e0f2c29e0792e91d 7
+src/commands/sgai/metadata/summarize.ts
+  e0f2c29e0792e91d 4,9-10,16-20,25-98,103-109,111-121,124-150,184-186,190-193,225,227-228,234-235,238,241,247-248,251-252,254-255,257,262-263,270,275-276
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "3eac8d6dc9d8af02f0b6fa068585f311cc71fb4a",
+  "prompts": {
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 513,
+      "total_deletions": 267,
+      "accepted_lines": 369,
+      "overriden_lines": 1
+    }
+  }
+}
