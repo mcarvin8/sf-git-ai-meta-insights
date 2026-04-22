@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { resolveMetadataSummaryTeam } from '../../src/salesforce/metadataSummaryContext.js';
 
 describe('resolveMetadataSummaryTeam', () => {

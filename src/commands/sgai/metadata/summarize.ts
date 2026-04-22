@@ -151,11 +151,11 @@ function mergeUniqueRepoRelativePaths(...groups: string[][]): string[] {
 }
 
 export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummarizeResult> {
-  public static readonly summary = messages.getMessage('summary');
-  public static readonly description = messages.getMessage('description');
-  public static readonly examples = messages.getMessages('examples');
+  public static override readonly summary = messages.getMessage('summary');
+  public static override readonly description = messages.getMessage('description');
+  public static override readonly examples = messages.getMessages('examples');
 
-  public static readonly flags = {
+  public static override readonly flags = {
     from: Flags.string({
       summary: messages.getMessage('flags.from.summary'),
       description: messages.getMessage('flags.from.description'),

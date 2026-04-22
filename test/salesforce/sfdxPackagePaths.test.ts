@@ -1,7 +1,7 @@
 import { writeFile, rm, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, vi } from 'vitest';
 import {
   type GitClient,
   getSalesforceMetadataIncludeFolders,
@@ -24,7 +24,7 @@ describe('getSalesforceMetadataIncludeFolders', () => {
       JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
       'utf8'
     );
-    const revparse = jest.fn(async () => tmpRoot);
+    const revparse = vi.fn(async () => tmpRoot);
     const git = { revparse } as unknown as GitClient;
 
     const paths = await getSalesforceMetadataIncludeFolders(git);
@@ -42,7 +42,7 @@ describe('getSalesforceMetadataIncludeFolders', () => {
       JSON.stringify({ packageDirectories: [{ path: 'pkg-a' }, { path: 'pkg-b' }] }),
       'utf8'
     );
-    const revparse = jest.fn(async () => '/SHOULD-NOT-BE-CALLED');
+    const revparse = vi.fn(async () => '/SHOULD-NOT-BE-CALLED');
     const git = { revparse } as unknown as GitClient;
 
     const paths = await getSalesforceMetadataIncludeFolders(git, ['pkg-a'], tmpRoot);

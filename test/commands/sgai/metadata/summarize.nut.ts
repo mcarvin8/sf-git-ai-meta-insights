@@ -3,10 +3,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { isLlmProviderConfigured } from '@mcarvin/smart-diff';
-import { beforeAll, afterAll, describe, it, expect } from '@jest/globals';
-
-/** TestSession + git setup often exceeds Jest's default 5s hook timeout on CI and Windows. */
-const NUT_TIMEOUT_MS = 120_000;
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 
 /** Same gate as `sgai metadata summarize`: needs a configured Vercel AI SDK provider (API key, base URL, or LLM default headers). */
 const canCallLlm = isLlmProviderConfigured();
@@ -28,6 +25,9 @@ const canCallLlm = isLlmProviderConfigured();
       'public class MyClass {}',
       'utf8'
     );
+    // Ignore the .git-ai/ daemon directory that a locally-installed git-ai trace2
+    // listener may drop into the working tree; otherwise `git add .` trips on its lock file.
+    await writeFile(join(projectRoot, '.gitignore'), '.git-ai/\n', 'utf8');
 
     execSync('git init', { cwd: projectRoot, stdio: 'pipe' });
     execSync('git config user.email "test@example.com"', { cwd: projectRoot, stdio: 'pipe' });
@@ -42,21 +42,17 @@ const canCallLlm = isLlmProviderConfigured();
     );
     execSync('git add .', { cwd: projectRoot, stdio: 'pipe' });
     execSync('git commit -m "Update metadata file"', { cwd: projectRoot, stdio: 'pipe' });
-  }, NUT_TIMEOUT_MS);
+  });
 
   afterAll(async () => {
     await session?.clean();
-  }, NUT_TIMEOUT_MS);
+  });
 
-  it(
-    'runs sgai metadata summarize and returns a summary with the expected structure',
-    async () => {
-      execCmd('sgai metadata summarize --from HEAD~1 --to HEAD', { cwd: session.dir, ensureExitCode: 0 });
-      const summary = await readFile(join(session.dir, 'metadata-summary.md'), 'utf8');
-      expect(summary.length).toBeGreaterThan(0);
-      expect(summary).toMatch(/^#\s+.*Metadata Change Summary/im);
-      expect(summary).toMatch(/##\s+Highlights/i);
-    },
-    NUT_TIMEOUT_MS
-  );
+  it('runs sgai metadata summarize and returns a summary with the expected structure', async () => {
+    execCmd('sgai metadata summarize --from HEAD~1 --to HEAD', { cwd: session.dir, ensureExitCode: 0 });
+    const summary = await readFile(join(session.dir, 'metadata-summary.md'), 'utf8');
+    expect(summary.length).toBeGreaterThan(0);
+    expect(summary).toMatch(/^#\s+.*Metadata Change Summary/im);
+    expect(summary).toMatch(/##\s+Highlights/i);
+  });
 });
