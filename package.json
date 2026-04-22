@@ -18,20 +18,22 @@
     "zod": "^4.1.8"
   },
   "devDependencies": {
+    "@commitlint/config-conventional": "^20.5.0",
     "@oclif/plugin-command-snapshot": "^5.3.15",
     "@salesforce/cli-plugins-testkit": "^5.3.52",
-    "@salesforce/dev-scripts": "^10",
-    "@types/mocha": "^10.0.10",
+    "@salesforce/dev-config": "^4.3.3",
+    "@salesforce/prettier-config": "^0.0.4",
     "@types/node": "^20.11.0",
     "@vitest/coverage-v8": "^4.1.5",
+    "eslint-config-salesforce-typescript": "^4.0.1",
     "eslint-plugin-sf-plugin": "^1.18.6",
     "husky": "^9.1.7",
-    "mocha": "^11.7.5",
     "oclif": "^4.23.0",
     "shx": "^0.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "wireit": "^0.14.12"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -81,16 +83,13 @@
   },
   "scripts": {
     "command-docs": "oclif readme",
-    "build": "tsc -b",
-    "clean": "sf-clean",
-    "clean-all": "sf-clean all",
+    "build": "wireit",
     "clean:lib": "shx rm -rf lib && shx rm -rf coverage && shx rm -rf .nyc_output && shx rm -f oclif.manifest.json oclif.lock",
     "compile": "wireit",
-    "docs": "sf-docs",
-    "format": "sf-format",
+    "format": "wireit",
     "lint": "wireit",
     "postpack": "shx rm -f oclif.manifest.json oclif.lock",
-    "prepack": "sf-prepack",
+    "prepack": "wireit",
     "prepare": "husky install",
     "test": "wireit",
     "test:nuts": "oclif manifest && vitest run --config ./vitest.nut.config.ts",
@@ -141,6 +140,21 @@
         "**/tsconfig.json"
       ],
       "output": []
+    },
+    "prepack": {
+      "command": "oclif manifest && oclif readme",
+      "files": [
+        "src/commands/sgai/metadata/summarize.ts",
+        "messages/sgai.metadata.summarize.md",
+        "README.md"
+      ],
+      "dependencies": [
+        "build"
+      ],
+      "output": [
+        "README.md"
+      ],
+      "clean": false
     },
     "test:compile": {
       "command": "tsc -p \"./test\" --pretty",
