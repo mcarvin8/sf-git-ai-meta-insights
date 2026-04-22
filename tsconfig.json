@@ -4,8 +4,15 @@
     "outDir": "lib",
     "rootDir": "src",
     "sourceMap": true,
-    "lib": ["ES2023", "DOM"],
-    "types": ["jest", "chai"]
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noUnusedParameters": true,
+    "resolveJsonModule": true,
+    "lib": ["ES2023", "DOM"]
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["node_modules"]
