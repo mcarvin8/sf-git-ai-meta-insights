@@ -39,6 +39,11 @@ Summarize metadata changes between two Git refs and write the generated summary 
 | `--output`                    | `-p`  | No       | `metadata-summary.md` | Output file path for the generated summary.                                                                                                                                         |
 | `--model`                     |       | No       | _provider default_    | Override the chat model id. Defaults to the resolved provider's default (e.g. `gpt-4o-mini` for OpenAI, `claude-3-5-haiku-latest` for Anthropic). Can also be set with `LLM_MODEL`. |
 | `--max-diff-chars`            |       | No       |                       | Max characters of unified diff text sent to the model (5,000–5,000,000).                                                                                                            |
+| `--context-lines`             |       | No       | _git default (3)_     | `git diff -U<n>` context lines around each change (0–1,000). Lower values cut tokens on modification-heavy diffs.                                                                   |
+| `--ignore-whitespace`         |       | No       | `false`               | Pass `-w` / `--ignore-all-space` to `git diff` so whitespace-only hunks don't consume tokens (also applied to `--numstat` / `--name-status`).                                       |
+| `--strip-diff-preamble`       |       | No       | `false`               | Drop low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the unified diff; `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept.                          |
+| `--max-hunk-lines`            |       | No       |                       | Cap each hunk's body (1–100,000); anything past the limit is elided to a single marker. `@@` header and `DiffSummary` totals stay intact.                                           |
+| `--exclude-default-noise`     |       | No       | `false`               | Merge smart-diff's built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into excluded pathspecs.                 |
 
 #### Examples
 
@@ -72,6 +77,19 @@ Override the chat model (any model id your configured provider supports):
 ```bash
 sf sgai metadata summarize --from HEAD~1 --to HEAD --model claude-3-5-sonnet-latest
 ```
+
+Reduce LLM token cost with unified-diff shaping (ignore whitespace, trim context, elide huge hunks, strip low-value preamble lines):
+
+```bash
+sf sgai metadata summarize \
+  --from HEAD~5 --to HEAD \
+  --ignore-whitespace \
+  --context-lines 1 \
+  --strip-diff-preamble \
+  --max-hunk-lines 400
+```
+
+These flags only reshape the unified diff text sent to the model — the structured change inventory (file counts, additions, deletions) is computed separately and is always accurate. See the [`@mcarvin/smart-diff` "Reducing tokens" guide](https://github.com/mcarvin8/smart-diff#reducing-tokens) for details on each option.
 
 ## Requirements
 

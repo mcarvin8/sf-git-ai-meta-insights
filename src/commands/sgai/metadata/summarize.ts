@@ -27,7 +27,27 @@ function validateMaxDiffCharsRange(maxDiffChars: number | undefined): void {
   if (maxDiffChars < 5000 || maxDiffChars > 5_000_000) {
     throw new SfError(
       `--max-diff-chars must be between 5000 and 5,000,000 (received ${maxDiffChars}).`,
-      'InvalidMaxDiffChars'
+      'InvalidMaxDiffChars',
+    );
+  }
+}
+
+function validateContextLinesRange(contextLines: number | undefined): void {
+  if (contextLines === undefined) return;
+  if (!Number.isInteger(contextLines) || contextLines < 0 || contextLines > 1000) {
+    throw new SfError(
+      `--context-lines must be an integer between 0 and 1000 (received ${contextLines}).`,
+      'InvalidContextLines',
+    );
+  }
+}
+
+function validateMaxHunkLinesRange(maxHunkLines: number | undefined): void {
+  if (maxHunkLines === undefined) return;
+  if (!Number.isInteger(maxHunkLines) || maxHunkLines < 1 || maxHunkLines > 100_000) {
+    throw new SfError(
+      `--max-hunk-lines must be an integer between 1 and 100,000 (received ${maxHunkLines}).`,
+      'InvalidMaxHunkLines',
     );
   }
 }
@@ -42,7 +62,7 @@ function getValidatedCommitMessageRegexLists(flags: CommitMessageRegexFlags): {
   exclude: string[];
 } {
   const include = mergeUniqueStrings(
-    (flags['commit-message-include'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0)
+    (flags['commit-message-include'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0),
   );
   const exclude = (flags['commit-message-exclude'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0);
 
@@ -63,12 +83,12 @@ type PackageDirectoryFlags = {
 
 async function resolveIncludeFoldersAndExclude(
   git: GitClient,
-  flags: PackageDirectoryFlags
+  flags: PackageDirectoryFlags,
 ): Promise<{ includeFolders: string[]; excludePackageDirectories: string[] }> {
   const excludePackageDirectories = mergeUniqueRepoRelativePaths(flags['exclude-package-directory'] ?? []);
   const includeFoldersFromProject = await getSalesforceMetadataIncludeFolders(
     git,
-    excludePackageDirectories.length > 0 ? excludePackageDirectories : undefined
+    excludePackageDirectories.length > 0 ? excludePackageDirectories : undefined,
   );
   const includeFoldersFromCli = mergeUniqueRepoRelativePaths(flags['include-package-directory'] ?? []);
   const includeFolders = mergeUniqueRepoRelativePaths(includeFoldersFromProject, includeFoldersFromCli);
@@ -81,7 +101,7 @@ function throwIfNoCommitsAfterMessageFilter(
   includeRegexes: string[],
   excludeRegexes: string[],
   from: string,
-  to: string
+  to: string,
 ): void {
   if (commits.length > 0 && filteredCommits.length === 0 && (includeRegexes.length > 0 || excludeRegexes.length > 0)) {
     throw new SfError(
@@ -91,7 +111,7 @@ function throwIfNoCommitsAfterMessageFilter(
         JSON.stringify(includeRegexes),
         JSON.stringify(excludeRegexes),
       ]),
-      'NoCommitsAfterFilter'
+      'NoCommitsAfterFilter',
     );
   }
 }
@@ -106,7 +126,7 @@ function validateCommitMessageRegexes(patterns: string[], kind: 'include' | 'exc
       filterCommitsByMessageRegexes(
         [{ hash: '_', message: ' ' }],
         kind === 'include' ? [pattern] : undefined,
-        kind === 'exclude' ? [pattern] : undefined
+        kind === 'exclude' ? [pattern] : undefined,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -115,7 +135,7 @@ function validateCommitMessageRegexes(patterns: string[], kind: 'include' | 'exc
       if (message.includes(needle)) {
         throw new SfError(
           `Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`,
-          kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude'
+          kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude',
         );
       }
       throw err;
@@ -218,12 +238,42 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       description: messages.getMessage('flags.max-diff-chars.description'),
       required: false,
     }),
+    'context-lines': Flags.integer({
+      summary: messages.getMessage('flags.context-lines.summary'),
+      description: messages.getMessage('flags.context-lines.description'),
+      required: false,
+    }),
+    'ignore-whitespace': Flags.boolean({
+      summary: messages.getMessage('flags.ignore-whitespace.summary'),
+      description: messages.getMessage('flags.ignore-whitespace.description'),
+      required: false,
+      default: false,
+    }),
+    'strip-diff-preamble': Flags.boolean({
+      summary: messages.getMessage('flags.strip-diff-preamble.summary'),
+      description: messages.getMessage('flags.strip-diff-preamble.description'),
+      required: false,
+      default: false,
+    }),
+    'max-hunk-lines': Flags.integer({
+      summary: messages.getMessage('flags.max-hunk-lines.summary'),
+      description: messages.getMessage('flags.max-hunk-lines.description'),
+      required: false,
+    }),
+    'exclude-default-noise': Flags.boolean({
+      summary: messages.getMessage('flags.exclude-default-noise.summary'),
+      description: messages.getMessage('flags.exclude-default-noise.description'),
+      required: false,
+      default: false,
+    }),
   };
 
   public async run(): Promise<SgaiMetadataSummarizeResult> {
     const { flags } = await this.parse(SgaiMetadataSummarize);
 
     validateMaxDiffCharsRange(flags['max-diff-chars']);
+    validateContextLinesRange(flags['context-lines']);
+    validateMaxHunkLinesRange(flags['max-hunk-lines']);
 
     if (!isLlmProviderConfigured()) {
       throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
@@ -246,7 +296,7 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
     const filteredCommits = filterCommitsByMessageRegexes(
       commits,
       commitMessageIncludeRegexes.length > 0 ? commitMessageIncludeRegexes : undefined,
-      commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined
+      commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined,
     );
 
     throwIfNoCommitsAfterMessageFilter(
@@ -255,7 +305,7 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       commitMessageIncludeRegexes,
       commitMessageExcludeFromFlag,
       from,
-      to
+      to,
     );
 
     const teamName = resolveMetadataSummaryTeam(flags.team);
@@ -275,6 +325,11 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       maxDiffChars: maxDiffCharsFlag,
       commitMessageIncludeRegexes: commitMessageIncludeRegexes.length > 0 ? commitMessageIncludeRegexes : undefined,
       commitMessageExcludeRegexes: commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined,
+      contextLines: flags['context-lines'],
+      ignoreWhitespace: flags['ignore-whitespace'] || undefined,
+      stripDiffPreamble: flags['strip-diff-preamble'] || undefined,
+      maxHunkLines: flags['max-hunk-lines'],
+      excludeDefaultNoise: flags['exclude-default-noise'] || undefined,
     });
 
     await writeFile(outputPath, summary, 'utf8');

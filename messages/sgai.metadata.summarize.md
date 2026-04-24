@@ -94,9 +94,50 @@ Maximum size of the unified diff sent to the LLM (characters).
 
 Large metadata diffs can exceed the model context window. The plugin sends at most this many characters of the unified diff (plus a fixed preamble). Allowed range is 5000 through 5000000 when set. Defaults to a conservative limit when unset; override with `LLM_MAX_DIFF_CHARS` or this flag. Only increase if your model and gateway support a larger context.
 
+# flags.context-lines.summary
+
+Number of context lines around each change in the unified diff.
+
+# flags.context-lines.description
+
+Sets `git diff -U<n>` when building the unified diff sent to the model. Lower values (1 or 0) are typically the single biggest token saver on modification-heavy diffs because they drop unchanged surrounding lines from each hunk. The structured diff summary (file counts and line totals) still reflects the full change. Allowed range is 0 through 1000 when set. When omitted, git's default (3) is used.
+
+# flags.ignore-whitespace.summary
+
+Ignore whitespace-only changes when building the diff.
+
+# flags.ignore-whitespace.description
+
+Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens in the unified diff. This is also applied to the `--numstat` and `--name-status` calls used for the structured summary so file counts and line totals stay consistent with the diff text. Useful for Salesforce metadata XML where formatting churn is common. Defaults to false.
+
+# flags.strip-diff-preamble.summary
+
+Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the unified diff.
+
+# flags.strip-diff-preamble.description
+
+When set, removes the per-file git diff preamble lines that contain almost no semantic information (`diff --git`, `index`, `new file mode`, `deleted file mode`, `old mode`, `new mode`, `similarity index`, `dissimilarity index`, `rename from`/`rename to`, `copy from`/`copy to`). The `--- a/…`, `+++ b/…`, and `@@` hunk headers are preserved so the model can still attribute changes to files. Defaults to false.
+
+# flags.max-hunk-lines.summary
+
+Cap the body of each diff hunk; anything past the limit is elided.
+
+# flags.max-hunk-lines.description
+
+Limits the number of body lines retained per `@@` hunk in the unified diff. Lines past the limit are replaced with a single elision marker so the `@@` header and the structured diff summary totals are preserved. Use this to prevent a single massive hunk (for example a regenerated metadata file) from dominating the LLM prompt. Allowed range is 1 through 100000 when set. When omitted, hunks are not truncated.
+
+# flags.exclude-default-noise.summary
+
+Merge smart-diff's built-in "noise" exclude list into the excluded paths.
+
+# flags.exclude-default-noise.description
+
+When set, the plugin merges smart-diff's `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into the set of excluded pathspecs passed to git. This is additive with any `--exclude-package-directory` values you provide. Defaults to false, because Salesforce DX repos rarely contain these folders inside package directories; enable it if your repo does.
+
 # examples
 
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --commit-message-include "feat" --commit-message-exclude "wip" --exclude-package-directory force-app/main/default/lwc/temp
 - <%= config.bin %> <%= command.id %> --team "Revenue Cloud" --from release/cut --to HEAD
 - <%= config.bin %> <%= command.id %> --from abc1234 --to HEAD
+- <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --ignore-whitespace --context-lines 1 --strip-diff-preamble --max-hunk-lines 400
