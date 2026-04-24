@@ -1,0 +1,12 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "b43adb9ad84fbb22eae9c969f38540a53c1ea4a6",
+  "prompts": {},
+  "humans": {
+    "h_b104b674256482": {
+      "author": "Matt Carvin"
+    }
+  }
+}

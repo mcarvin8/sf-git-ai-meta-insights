@@ -1,0 +1,38 @@
+test/git/gitDiff.test.ts
+  2456dbe3f92eadf4 35-38,42-45,89-96
+test/ai/metadataSummary.test.ts
+  2456dbe3f92eadf4 54-59,61-62,81-86,89,101-102,121-129,146-154,168-176,190-195,198,203-204,222-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "a86c60c83583771ae931c0c350d2ae0d3d51ffae",
+  "prompts": {
+    "2456dbe3f92eadf4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9cedd3ed-172e-4095-a472-4ad9ced871cd",
+        "model": "auto-high"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 48,
+      "accepted_lines": 78,
+      "overriden_lines": 0
+    },
+    "e0f2c29e0792e91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4b1499be-2616-48d3-8f83-11449375934f",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
