@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.2.0...v2.3.0) (2026-04-24)
+
+
+### Features
+
+* **diff:** add CLI flags for unified-diff token-reduction controls ([#20](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/20)) ([cbc5523](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/cbc5523959bbbc2f38aa1410a6f24170f2163c7b))
+
 ## [2.2.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.1.0...v2.2.0) (2026-04-21)
 
 

@@ -1,7 +1,7 @@
 {
   "name": "sf-git-ai-meta-insights",
   "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.96",
     "@ai-sdk/anthropic": "^3.0.71",
