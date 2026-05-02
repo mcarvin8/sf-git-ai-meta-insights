@@ -9,10 +9,12 @@ updates:
     allow:
       - dependency-name: '@mcarvin/smart-diff'
       - dependency-name: '@ai-sdk/*'
+      - dependency-name: 'ai'
     groups:
       ai-sdk:
         patterns:
           - "@ai-sdk/*"
+          - "ai"
 
   - package-ecosystem: 'github-actions'
     directory: '/'
