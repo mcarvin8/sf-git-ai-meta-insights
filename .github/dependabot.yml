@@ -5,9 +5,14 @@ updates:
     schedule:
       interval: 'weekly'
     commit-message:
-      prefix: "feat(smart-diff)"
+      prefix: "feat(ai)"
     allow:
       - dependency-name: '@mcarvin/smart-diff'
+    groups:
+      ai-sdk:
+        patterns:
+          - "@ai-sdk/*"
+
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
