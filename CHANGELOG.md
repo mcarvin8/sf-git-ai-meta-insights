@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.3.0...v2.4.0) (2026-05-02)
+
+
+### Features
+
+* **ai:** bump the ai-sdk group across 1 directory with 11 updates ([#26](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/26)) ([6ab5115](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/6ab5115ec89fdd18d43d9fd312fada2e1aca4a0d))
+* **deps:** bump actions/setup-node from 6.3.0 to 6.4.0 ([#23](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/23)) ([8ff9f9c](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/8ff9f9cbe1b3e40ef46ddc7984eb1a5955909c27))
+* **deps:** bump googleapis/release-please-action from 4 to 5 ([#22](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/22)) ([e29d6f3](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/e29d6f34f87d662a92b3ea19889cd7b47319c2bb))
+
 ## [2.3.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.2.0...v2.3.0) (2026-04-24)
 
 
