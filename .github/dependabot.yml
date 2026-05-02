@@ -8,6 +8,7 @@ updates:
       prefix: "feat(ai)"
     allow:
       - dependency-name: '@mcarvin/smart-diff'
+      - dependency-name: '@ai-sdk/*'
     groups:
       ai-sdk:
         patterns:
