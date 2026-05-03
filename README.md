@@ -5,11 +5,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/salesforcecli/sf-git-ai-meta-insights/main/LICENSE.md)
 [![codecov](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights/graph/badge.svg?token=N5FKE0JPHN)](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights)
 
-`sf-git-ai-meta-insights` is an `sf` plugin that generates AI summaries of Salesforce metadata changes from a git diff.
-
-## Overview
-
-This plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) — OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. A configured provider (API key, base URL, and/or default headers) is **required**.
+This Salesforce CLI plugin summarizes metadata changes between two Git refs, optionally filters commits by message, and writes a Markdown file using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) — OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway.
 
 ![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
 
