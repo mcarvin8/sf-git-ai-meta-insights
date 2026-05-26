@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.5.0...v2.5.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **deps:** pin direct dependencies to exact versions ([#29](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/29)) ([daac7f6](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/daac7f66f6d3440dc62c84e8649dc6198a267c26))
+
 ## [2.5.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.4.0...v2.5.0) (2026-05-03)
 
 
