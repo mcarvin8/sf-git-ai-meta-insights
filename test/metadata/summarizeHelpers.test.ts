@@ -19,6 +19,7 @@ vi.mock('../../src/salesforce/sfdxPackagePaths.js', async (importOriginal) => {
   };
 });
 
+import { filterCommitsByMessageRegexes } from '@mcarvin/smart-diff';
 import { getSalesforceMetadataIncludeFolders, type GitClient } from '../../src/salesforce/sfdxPackagePaths.js';
 import {
   getValidatedCommitMessageRegexLists,
@@ -242,6 +243,14 @@ describe('validateCommitMessageRegexes', () => {
       'InvalidMessageExclude',
       'Invalid commit message exclude regular expression',
     );
+  });
+
+  it('rethrows errors from filterCommitsByMessageRegexes that do not match the needle', () => {
+    const unexpectedError = new Error('Some unexpected internal error');
+    vi.mocked(filterCommitsByMessageRegexes).mockImplementationOnce(() => {
+      throw unexpectedError;
+    });
+    expect(() => validateCommitMessageRegexes(['some-pattern'], 'include')).toThrow(unexpectedError);
   });
 });
 
