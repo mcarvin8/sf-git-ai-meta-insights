@@ -79,6 +79,8 @@ describe('runMetadataSummarize', () => {
     expect(result).toEqual({ path: 'summary.md' });
     expect(log).toHaveBeenCalledWith('Generated metadata summary at summary.md');
     expect(writeFile).toHaveBeenCalledWith('summary.md', '## Summary', 'utf8');
+    expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'abc123', 'HEAD');
+    expect(filterCommitsByMessageRegexes).toHaveBeenCalledWith([COMMIT], undefined, undefined);
     expect(summarizeGitDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'abc123',
@@ -89,6 +91,7 @@ describe('runMetadataSummarize', () => {
         ignoreWhitespace: undefined,
         stripDiffPreamble: undefined,
         excludeDefaultNoise: undefined,
+        teamName: undefined,
       }),
     );
   });
@@ -97,6 +100,8 @@ describe('runMetadataSummarize', () => {
     const log = vi.fn();
     const result = await runMetadataSummarize(FULL_OPTIONS, 'no package dirs', () => 'no commits', log);
     expect(result).toEqual({ path: 'out.md' });
+    expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'abc123', 'def456');
+    expect(filterCommitsByMessageRegexes).toHaveBeenCalledWith([COMMIT], ['feat'], ['chore']);
     expect(summarizeGitDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'abc123',
@@ -110,6 +115,7 @@ describe('runMetadataSummarize', () => {
         maxDiffChars: 10_000,
         contextLines: 5,
         maxHunkLines: 500,
+        teamName: 'Platform',
       }),
     );
   });
