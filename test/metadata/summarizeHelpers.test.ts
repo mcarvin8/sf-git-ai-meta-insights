@@ -260,6 +260,14 @@ describe('validateCommitMessageRegexes', () => {
     });
     expect(() => validateCommitMessageRegexes(['some-pattern'], 'include')).toThrow('a plain string error');
   });
+
+  it('rethrows errors from filterCommitsByMessageRegexes for kind exclude that do not match the needle', () => {
+    const unexpectedError = new Error('Some unexpected internal error');
+    vi.mocked(filterCommitsByMessageRegexes).mockImplementationOnce(() => {
+      throw unexpectedError;
+    });
+    expect(() => validateCommitMessageRegexes(['some-pattern'], 'exclude')).toThrow(unexpectedError);
+  });
 });
 
 describe('mergeUniqueStrings', () => {

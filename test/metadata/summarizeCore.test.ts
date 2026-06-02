@@ -122,8 +122,31 @@ describe('runMetadataSummarize', () => {
 
   it('throws SfError when LLM provider is not configured', async () => {
     vi.mocked(isLlmProviderConfigured).mockReturnValue(false);
+    let caught: unknown;
+    try {
+      await runMetadataSummarize(MINIMAL_OPTIONS, 'no pkg dirs', () => 'no commits', vi.fn());
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(SfError);
+    expect((caught as SfError).name).toBe('NoLlmProvider');
+  });
+
+  it('throws SfError when max-diff-chars is below valid range', async () => {
     await expect(
-      runMetadataSummarize(MINIMAL_OPTIONS, 'no pkg dirs', () => 'no commits', vi.fn()),
+      runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-diff-chars': 100 }, 'no pkg dirs', () => 'no commits', vi.fn()),
+    ).rejects.toBeInstanceOf(SfError);
+  });
+
+  it('throws SfError when context-lines is out of valid range', async () => {
+    await expect(
+      runMetadataSummarize({ ...MINIMAL_OPTIONS, 'context-lines': -1 }, 'no pkg dirs', () => 'no commits', vi.fn()),
+    ).rejects.toBeInstanceOf(SfError);
+  });
+
+  it('throws SfError when max-hunk-lines is below valid range', async () => {
+    await expect(
+      runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-hunk-lines': 0 }, 'no pkg dirs', () => 'no commits', vi.fn()),
     ).rejects.toBeInstanceOf(SfError);
   });
 
