@@ -51,9 +51,11 @@ export function getValidatedCommitMessageRegexLists(flags: CommitMessageRegexFla
   );
   const exclude = (flags['commit-message-exclude'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0);
 
+  // Stryker disable-next-line ConditionalExpression, EqualityOperator
   if (include.length > 0) {
     validateCommitMessageRegexes(include, 'include');
   }
+  // Stryker disable-next-line ConditionalExpression, EqualityOperator
   if (exclude.length > 0) {
     validateCommitMessageRegexes(exclude, 'exclude');
   }

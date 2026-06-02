@@ -4,6 +4,7 @@
 [![Downloads/week](https://img.shields.io/npm/dw/sf-git-ai-meta-insights.svg)](https://npmjs.org/package/sf-git-ai-meta-insights)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/salesforcecli/sf-git-ai-meta-insights/main/LICENSE.md)
 [![codecov](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights/graph/badge.svg?token=N5FKE0JPHN)](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights)
+[![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsf-git-ai-meta-insights%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/sf-git-ai-meta-insights/main)
 
 Salesforce CLI plugin that generates AI-written Markdown summaries of metadata changes between two Git refs. Supports every LLM provider in the [Vercel AI SDK](https://sdk.vercel.ai): OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway.
 

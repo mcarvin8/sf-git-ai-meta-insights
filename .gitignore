@@ -56,3 +56,7 @@ stdout*.txt
 
 .sf/
 .sfdx/
+
+# stryker mutation testing
+.stryker-tmp
+reports
