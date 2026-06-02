@@ -1,7 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
 import { Messages, SfError } from '@salesforce/core';
-import type { CommitInfo } from '@mcarvin/smart-diff';
 import {
   createGitClient,
   filterCommitsByMessageRegexes,
@@ -14,161 +13,20 @@ import {
 import { SALESFORCE_METADATA_SYSTEM_PROMPT } from '../../../ai/salesforceMetadataPrompt.js';
 import { resolveMetadataSummaryTeam } from '../../../salesforce/metadataSummaryContext.js';
 import {
-  type GitClient,
-  getSalesforceMetadataIncludeFolders,
-  normalizeRepoRelativeFolderPath,
-} from '../../../salesforce/sfdxPackagePaths.js';
+  getValidatedCommitMessageRegexLists,
+  resolveIncludeFoldersAndExclude,
+  throwIfNoCommitsAfterMessageFilter,
+  validateContextLinesRange,
+  validateMaxDiffCharsRange,
+  validateMaxHunkLinesRange,
+} from '../../../metadata/summarizeHelpers.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('sf-git-ai-meta-insights', 'sgai.metadata.summarize');
 
-function validateMaxDiffCharsRange(maxDiffChars: number | undefined): void {
-  if (maxDiffChars === undefined) return;
-  if (maxDiffChars < 5000 || maxDiffChars > 5_000_000) {
-    throw new SfError(
-      `--max-diff-chars must be between 5000 and 5,000,000 (received ${maxDiffChars}).`,
-      'InvalidMaxDiffChars',
-    );
-  }
-}
-
-function validateContextLinesRange(contextLines: number | undefined): void {
-  if (contextLines === undefined) return;
-  if (!Number.isInteger(contextLines) || contextLines < 0 || contextLines > 1000) {
-    throw new SfError(
-      `--context-lines must be an integer between 0 and 1000 (received ${contextLines}).`,
-      'InvalidContextLines',
-    );
-  }
-}
-
-function validateMaxHunkLinesRange(maxHunkLines: number | undefined): void {
-  if (maxHunkLines === undefined) return;
-  if (!Number.isInteger(maxHunkLines) || maxHunkLines < 1 || maxHunkLines > 100_000) {
-    throw new SfError(
-      `--max-hunk-lines must be an integer between 1 and 100,000 (received ${maxHunkLines}).`,
-      'InvalidMaxHunkLines',
-    );
-  }
-}
-
-type CommitMessageRegexFlags = {
-  'commit-message-include'?: string[];
-  'commit-message-exclude'?: string[];
-};
-
-function getValidatedCommitMessageRegexLists(flags: CommitMessageRegexFlags): {
-  include: string[];
-  exclude: string[];
-} {
-  const include = mergeUniqueStrings(
-    (flags['commit-message-include'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0),
-  );
-  const exclude = (flags['commit-message-exclude'] ?? []).map((s) => s.trim()).filter((s) => s.length > 0);
-
-  if (include.length > 0) {
-    validateCommitMessageRegexes(include, 'include');
-  }
-  if (exclude.length > 0) {
-    validateCommitMessageRegexes(exclude, 'exclude');
-  }
-
-  return { include, exclude };
-}
-
-type PackageDirectoryFlags = {
-  'exclude-package-directory'?: string[];
-  'include-package-directory'?: string[];
-};
-
-async function resolveIncludeFoldersAndExclude(
-  git: GitClient,
-  flags: PackageDirectoryFlags,
-): Promise<{ includeFolders: string[]; excludePackageDirectories: string[] }> {
-  const excludePackageDirectories = mergeUniqueRepoRelativePaths(flags['exclude-package-directory'] ?? []);
-  const includeFoldersFromProject = await getSalesforceMetadataIncludeFolders(
-    git,
-    excludePackageDirectories.length > 0 ? excludePackageDirectories : undefined,
-  );
-  const includeFoldersFromCli = mergeUniqueRepoRelativePaths(flags['include-package-directory'] ?? []);
-  const includeFolders = mergeUniqueRepoRelativePaths(includeFoldersFromProject, includeFoldersFromCli);
-  return { includeFolders, excludePackageDirectories };
-}
-
-function throwIfNoCommitsAfterMessageFilter(
-  commits: CommitInfo[],
-  filteredCommits: CommitInfo[],
-  includeRegexes: string[],
-  excludeRegexes: string[],
-  from: string,
-  to: string,
-): void {
-  if (commits.length > 0 && filteredCommits.length === 0 && (includeRegexes.length > 0 || excludeRegexes.length > 0)) {
-    throw new SfError(
-      messages.getMessage('errors.noCommitsAfterFilter', [
-        from,
-        to,
-        JSON.stringify(includeRegexes),
-        JSON.stringify(excludeRegexes),
-      ]),
-      'NoCommitsAfterFilter',
-    );
-  }
-}
-
 export type SgaiMetadataSummarizeResult = {
   path: string;
 };
-
-function validateCommitMessageRegexes(patterns: string[], kind: 'include' | 'exclude'): void {
-  for (const pattern of patterns) {
-    try {
-      filterCommitsByMessageRegexes(
-        [{ hash: '_', message: ' ' }],
-        kind === 'include' ? [pattern] : undefined,
-        kind === 'exclude' ? [pattern] : undefined,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      const needle =
-        kind === 'include' ? 'Invalid commit message include pattern' : 'Invalid commit message exclude pattern';
-      if (message.includes(needle)) {
-        throw new SfError(
-          `Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`,
-          kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude',
-        );
-      }
-      throw err;
-    }
-  }
-}
-
-function mergeUniqueStrings(...groups: string[][]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const group of groups) {
-    for (const s of group) {
-      if (seen.has(s)) continue;
-      seen.add(s);
-      out.push(s);
-    }
-  }
-  return out;
-}
-
-function mergeUniqueRepoRelativePaths(...groups: string[][]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const group of groups) {
-    for (const raw of group) {
-      const norm = normalizeRepoRelativeFolderPath(raw);
-      if (norm.length === 0 || seen.has(norm)) continue;
-      seen.add(norm);
-      out.push(norm);
-    }
-  }
-  return out;
-}
 
 export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummarizeResult> {
   public static override readonly summary = messages.getMessage('summary');
@@ -304,13 +162,15 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       filteredCommits,
       commitMessageIncludeRegexes,
       commitMessageExcludeFromFlag,
-      from,
-      to,
+      messages.getMessage('errors.noCommitsAfterFilter', [
+        from,
+        to,
+        JSON.stringify(commitMessageIncludeRegexes),
+        JSON.stringify(commitMessageExcludeFromFlag),
+      ]),
     );
 
     const teamName = resolveMetadataSummaryTeam(flags.team);
-
-    const maxDiffCharsFlag = flags['max-diff-chars'];
 
     const summary = await summarizeGitDiff({
       from,
@@ -322,7 +182,7 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       systemPrompt: SALESFORCE_METADATA_SYSTEM_PROMPT,
       teamName,
       model: flags.model,
-      maxDiffChars: maxDiffCharsFlag,
+      maxDiffChars: flags['max-diff-chars'],
       commitMessageIncludeRegexes: commitMessageIncludeRegexes.length > 0 ? commitMessageIncludeRegexes : undefined,
       commitMessageExcludeRegexes: commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined,
       contextLines: flags['context-lines'],
