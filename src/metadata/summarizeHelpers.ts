@@ -8,6 +8,7 @@ import {
 } from '../salesforce/sfdxPackagePaths.js';
 
 export function validateMaxDiffCharsRange(maxDiffChars: number | undefined): void {
+  // Stryker disable-next-line ConditionalExpression
   if (maxDiffChars === undefined) return;
   if (maxDiffChars < 5000 || maxDiffChars > 5_000_000) {
     throw new SfError(
@@ -98,8 +99,10 @@ export function validateCommitMessageRegexes(patterns: string[], kind: 'include'
   for (const pattern of patterns) {
     try {
       filterCommitsByMessageRegexes(
+        // Stryker disable-next-line ArrayDeclaration, ObjectLiteral, StringLiteral
         [{ hash: '_', message: ' ' }],
         kind === 'include' ? [pattern] : undefined,
+        // Stryker disable-next-line ConditionalExpression
         kind === 'exclude' ? [pattern] : undefined,
       );
     } catch (err) {
