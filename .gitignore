@@ -8,6 +8,7 @@ tmp/
 npm-error.log
 yarn-error.log
 yarn.lock
+*.log
 
 
 # compile source
