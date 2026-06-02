@@ -1,25 +1,7 @@
-import { writeFile } from 'node:fs/promises';
 import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
-import { Messages, SfError } from '@salesforce/core';
-import {
-  createGitClient,
-  filterCommitsByMessageRegexes,
-  getCommits,
-  isLlmProviderConfigured,
-  LLM_GATEWAY_REQUIRED_MESSAGE,
-  summarizeGitDiff,
-} from '@mcarvin/smart-diff';
+import { Messages } from '@salesforce/core';
 
-import { SALESFORCE_METADATA_SYSTEM_PROMPT } from '../../../ai/salesforceMetadataPrompt.js';
-import { resolveMetadataSummaryTeam } from '../../../salesforce/metadataSummaryContext.js';
-import {
-  getValidatedCommitMessageRegexLists,
-  resolveIncludeFoldersAndExclude,
-  throwIfNoCommitsAfterMessageFilter,
-  validateContextLinesRange,
-  validateMaxDiffCharsRange,
-  validateMaxHunkLinesRange,
-} from '../../../metadata/summarizeHelpers.js';
+import { runMetadataSummarize, type SummarizeOptions } from '../../../metadata/summarizeCore.js';
 
 Messages.importMessagesDirectoryFromMetaUrl(import.meta.url);
 const messages = Messages.loadMessages('sf-git-ai-meta-insights', 'sgai.metadata.summarize');
@@ -128,73 +110,11 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
 
   public async run(): Promise<SgaiMetadataSummarizeResult> {
     const { flags } = await this.parse(SgaiMetadataSummarize);
-
-    validateMaxDiffCharsRange(flags['max-diff-chars']);
-    validateContextLinesRange(flags['context-lines']);
-    validateMaxHunkLinesRange(flags['max-hunk-lines']);
-
-    if (!isLlmProviderConfigured()) {
-      throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
-    }
-
-    const from = flags.from;
-    const to = flags.to ?? 'HEAD';
-    const outputPath = flags.output ?? 'metadata-summary.md';
-    const { include: commitMessageIncludeRegexes, exclude: commitMessageExcludeFromFlag } =
-      getValidatedCommitMessageRegexLists(flags);
-
-    const git = createGitClient(process.cwd());
-    const { includeFolders, excludePackageDirectories } = await resolveIncludeFoldersAndExclude(git, flags);
-
-    if (includeFolders.length === 0) {
-      throw new SfError(messages.getMessage('errors.noPackageDirectories'), 'NoPackageDirectories');
-    }
-
-    const commits = await getCommits(git, from, to);
-    const filteredCommits = filterCommitsByMessageRegexes(
-      commits,
-      commitMessageIncludeRegexes.length > 0 ? commitMessageIncludeRegexes : undefined,
-      commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined,
+    return runMetadataSummarize(
+      flags as SummarizeOptions,
+      messages.getMessage('errors.noPackageDirectories'),
+      (from, to, include, exclude) => messages.getMessage('errors.noCommitsAfterFilter', [from, to, include, exclude]),
+      (msg) => this.log(msg),
     );
-
-    throwIfNoCommitsAfterMessageFilter(
-      commits,
-      filteredCommits,
-      commitMessageIncludeRegexes,
-      commitMessageExcludeFromFlag,
-      messages.getMessage('errors.noCommitsAfterFilter', [
-        from,
-        to,
-        JSON.stringify(commitMessageIncludeRegexes),
-        JSON.stringify(commitMessageExcludeFromFlag),
-      ]),
-    );
-
-    const teamName = resolveMetadataSummaryTeam(flags.team);
-
-    const summary = await summarizeGitDiff({
-      from,
-      to: flags.to,
-      git,
-      cwd: process.cwd(),
-      includeFolders,
-      excludeFolders: excludePackageDirectories.length > 0 ? excludePackageDirectories : undefined,
-      systemPrompt: SALESFORCE_METADATA_SYSTEM_PROMPT,
-      teamName,
-      model: flags.model,
-      maxDiffChars: flags['max-diff-chars'],
-      commitMessageIncludeRegexes: commitMessageIncludeRegexes.length > 0 ? commitMessageIncludeRegexes : undefined,
-      commitMessageExcludeRegexes: commitMessageExcludeFromFlag.length > 0 ? commitMessageExcludeFromFlag : undefined,
-      contextLines: flags['context-lines'],
-      ignoreWhitespace: flags['ignore-whitespace'] || undefined,
-      stripDiffPreamble: flags['strip-diff-preamble'] || undefined,
-      maxHunkLines: flags['max-hunk-lines'],
-      excludeDefaultNoise: flags['exclude-default-noise'] || undefined,
-    });
-
-    await writeFile(outputPath, summary, 'utf8');
-    this.log(`Generated metadata summary at ${outputPath}`);
-
-    return { path: outputPath };
   }
 }
