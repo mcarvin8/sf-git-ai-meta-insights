@@ -21,7 +21,7 @@ export function normalizeRepoRelativeFolderPath(repoRelativePath: string): strin
 export async function getSalesforceMetadataIncludeFolders(
   git: GitClient,
   ignorePackageDirectories?: string[],
-  repoRootOverride?: string
+  repoRootOverride?: string,
 ): Promise<string[]> {
   const repoRoot = repoRootOverride ?? (await getRepoRoot(git));
   return readPackageDirectoryRelativePaths(repoRoot, ignorePackageDirectories);
@@ -29,7 +29,7 @@ export async function getSalesforceMetadataIncludeFolders(
 
 export async function readPackageDirectoryRelativePaths(
   repoRoot: string,
-  ignorePackageDirectories?: string[]
+  ignorePackageDirectories?: string[],
 ): Promise<string[]> {
   const projectPath = join(repoRoot, SFDX_PROJECT_FILE_NAME);
 
@@ -38,6 +38,7 @@ export async function readPackageDirectoryRelativePaths(
   };
 
   try {
+    // Stryker disable-next-line StringLiteral
     const raw = await readFile(projectPath, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
     project = parsed as {
@@ -52,8 +53,7 @@ export async function readPackageDirectoryRelativePaths(
     .filter((d): d is string => typeof d === 'string' && d.trim().length > 0)
     .map((d) => d.trim());
 
-  if (dirs.length === 0) return [];
-
+  // Stryker disable-next-line ArrayDeclaration
   const ignored = (ignorePackageDirectories ?? []).map((d) => d.replace(/\\/g, '/').toLowerCase());
 
   const kept = dirs.filter((dir) => {

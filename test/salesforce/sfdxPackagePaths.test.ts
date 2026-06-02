@@ -22,7 +22,7 @@ describe('getSalesforceMetadataIncludeFolders', () => {
     await writeFile(
       join(tmpRoot, 'sfdx-project.json'),
       JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
-      'utf8'
+      'utf8',
     );
     const revparse = vi.fn(async () => tmpRoot);
     const git = { revparse } as unknown as GitClient;
@@ -40,7 +40,7 @@ describe('getSalesforceMetadataIncludeFolders', () => {
     await writeFile(
       join(tmpRoot, 'sfdx-project.json'),
       JSON.stringify({ packageDirectories: [{ path: 'pkg-a' }, { path: 'pkg-b' }] }),
-      'utf8'
+      'utf8',
     );
     const revparse = vi.fn(async () => '/SHOULD-NOT-BE-CALLED');
     const git = { revparse } as unknown as GitClient;
@@ -83,7 +83,7 @@ describe('readPackageDirectoryRelativePaths', () => {
     await writeFile(
       join(tmpRoot, 'sfdx-project.json'),
       JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
-      'utf8'
+      'utf8',
     );
     const paths = await readPackageDirectoryRelativePaths(tmpRoot);
     expect(paths).toEqual(['force-app']);
@@ -97,7 +97,7 @@ describe('readPackageDirectoryRelativePaths', () => {
       JSON.stringify({
         packageDirectories: [{ path: 'force-app' }, { path: 'unpackaged' }],
       }),
-      'utf8'
+      'utf8',
     );
     const paths = await readPackageDirectoryRelativePaths(tmpRoot, ['force-app']);
     expect(paths).toEqual(['unpackaged']);
@@ -119,7 +119,7 @@ describe('readPackageDirectoryRelativePaths', () => {
       JSON.stringify({
         packageDirectories: ['force-app', null, { path: '' }, { path: '   ' }, '  ', { path: 'pkg-b' }],
       }),
-      'utf8'
+      'utf8',
     );
     const paths = await readPackageDirectoryRelativePaths(tmpRoot);
     expect(paths).toEqual(['force-app', 'pkg-b']);
@@ -131,10 +131,70 @@ describe('readPackageDirectoryRelativePaths', () => {
     await writeFile(
       join(tmpRoot, 'sfdx-project.json'),
       JSON.stringify({ packageDirectories: [{ path: '.' }] }),
-      'utf8'
+      'utf8',
     );
     const paths = await readPackageDirectoryRelativePaths(tmpRoot);
     expect(paths).toEqual(['.']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('trims whitespace from path entries', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-trim-path-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: '  force-app  ' }] }),
+      'utf8',
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot);
+    expect(paths).toEqual(['force-app']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('normalizes backslashes in package directory paths and returned paths', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-backslash-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'sub\\dir' }] }),
+      'utf8',
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot);
+    expect(paths).toEqual(['sub/dir']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('excludes a directory that is a sub-path of an ignored directory', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-subpath-excl-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'force-app/sub' }, { path: 'other-app' }] }),
+      'utf8',
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot, ['force-app']);
+    expect(paths).toEqual(['other-app']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('does not exclude a directory that shares a name prefix but is not a sub-path', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-prefix-only-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'pkg-a' }, { path: 'pkg' }] }),
+      'utf8',
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot, ['pkg']);
+    expect(paths).toEqual(['pkg-a']);
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  it('normalizes backslashes in ignored package directory paths', async () => {
+    const tmpRoot = await mkdtemp(join(tmpdir(), 'sgai-ignore-backslash-'));
+    await writeFile(
+      join(tmpRoot, 'sfdx-project.json'),
+      JSON.stringify({ packageDirectories: [{ path: 'sub/dir' }, { path: 'other' }] }),
+      'utf8',
+    );
+    const paths = await readPackageDirectoryRelativePaths(tmpRoot, ['sub\\dir']);
+    expect(paths).toEqual(['other']);
     await rm(tmpRoot, { recursive: true, force: true });
   });
 });
