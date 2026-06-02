@@ -252,6 +252,14 @@ describe('validateCommitMessageRegexes', () => {
     });
     expect(() => validateCommitMessageRegexes(['some-pattern'], 'include')).toThrow(unexpectedError);
   });
+
+  it('rethrows non-Error throws from filterCommitsByMessageRegexes', () => {
+    vi.mocked(filterCommitsByMessageRegexes).mockImplementationOnce(() => {
+      // eslint-disable-next-line no-throw-literal
+      throw 'a plain string error';
+    });
+    expect(() => validateCommitMessageRegexes(['some-pattern'], 'include')).toThrow('a plain string error');
+  });
 });
 
 describe('mergeUniqueStrings', () => {
