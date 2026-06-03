@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.5.1...v2.6.0) (2026-06-03)
+
+
+### Features
+
+* **ai:** bump the ai-sdk group with 8 updates ([#35](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/35)) ([78689f3](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/78689f38a4d214f58b33c8b208e0bc014f8b932e))
+
 ## [2.5.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.5.0...v2.5.1) (2026-05-26)
 
 
