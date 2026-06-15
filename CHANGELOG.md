@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.6.0...v2.7.0) (2026-06-15)
+
+
+### Features
+
+* **ai:** bump @mcarvin/smart-diff from 2.2.1 to 2.3.2 ([#40](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/40)) ([3c47030](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/3c47030bff896c474b5b5f3a25ee3cc3eeb4afde))
+
+
+### Bug Fixes
+
+* **deps:** remove redundant AI SDK and zod dependencies ([#37](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/37)) ([f228dc0](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/f228dc0f257322faec79c62a827ecedba8156f41))
+
 ## [2.6.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.5.1...v2.6.0) (2026-06-03)
 
 
