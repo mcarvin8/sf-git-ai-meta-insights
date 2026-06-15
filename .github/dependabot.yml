@@ -5,20 +5,13 @@ updates:
     schedule:
       interval: 'monthly'
     commit-message:
-      prefix: "feat(ai)"
+      prefix: 'feat(ai)'
     allow:
       - dependency-name: '@mcarvin/smart-diff'
-      - dependency-name: '@ai-sdk/*'
-      - dependency-name: 'ai'
-    groups:
-      ai-sdk:
-        patterns:
-          - "@ai-sdk/*"
-          - "ai"
 
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'monthly'
     commit-message:
-      prefix: "build"
+      prefix: 'build'
