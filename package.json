@@ -3,7 +3,7 @@
   "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
   "version": "2.7.0",
   "dependencies": {
-    "@mcarvin/smart-diff": "2.3.2",
+    "@mcarvin/smart-diff": "3.0.0",
     "@oclif/core": "4.11.4",
     "@salesforce/core": "8.26.3",
     "@salesforce/sf-plugins-core": "12.2.6"
