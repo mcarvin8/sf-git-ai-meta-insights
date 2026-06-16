@@ -24,13 +24,13 @@ describe('getSalesforceMetadataIncludeFolders', () => {
       JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
       'utf8',
     );
-    const revparse = vi.fn(async () => tmpRoot);
-    const git = { revparse } as unknown as GitClient;
+    const run = vi.fn(async () => tmpRoot);
+    const git = { run } as unknown as GitClient;
 
     const paths = await getSalesforceMetadataIncludeFolders(git);
 
     expect(paths).toEqual(['force-app']);
-    expect(revparse).toHaveBeenCalledWith(['--show-toplevel']);
+    expect(run).toHaveBeenCalledWith(['rev-parse', '--show-toplevel']);
 
     await rm(tmpRoot, { recursive: true, force: true });
   });
@@ -42,13 +42,13 @@ describe('getSalesforceMetadataIncludeFolders', () => {
       JSON.stringify({ packageDirectories: [{ path: 'pkg-a' }, { path: 'pkg-b' }] }),
       'utf8',
     );
-    const revparse = vi.fn(async () => '/SHOULD-NOT-BE-CALLED');
-    const git = { revparse } as unknown as GitClient;
+    const run = vi.fn(async () => '/SHOULD-NOT-BE-CALLED');
+    const git = { run } as unknown as GitClient;
 
     const paths = await getSalesforceMetadataIncludeFolders(git, ['pkg-a'], tmpRoot);
 
     expect(paths).toEqual(['pkg-b']);
-    expect(revparse).not.toHaveBeenCalled();
+    expect(run).not.toHaveBeenCalled();
 
     await rm(tmpRoot, { recursive: true, force: true });
   });
