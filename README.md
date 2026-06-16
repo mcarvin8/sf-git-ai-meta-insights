@@ -173,4 +173,4 @@ The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff
 
 ## License
 
-MIT
+[MIT](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/refs/heads/main/LICENSE.md)
