@@ -1,6 +1,6 @@
 {
   "name": "sf-git-ai-meta-insights",
-  "description": "Provide AI-generated summaries on Salesforce metadata changes by analyzing the git diff.",
+  "description": "Salesforce CLI plugin that generates AI-powered summaries of metadata changes from git diffs.",
   "version": "2.8.0",
   "dependencies": {
     "@mcarvin/smart-diff": "3.0.0",
@@ -52,7 +52,8 @@
     "git",
     "diff",
     "summary",
-    "insights"
+    "llm",
+    "changelog"
   ],
   "license": "MIT",
   "oclif": {
