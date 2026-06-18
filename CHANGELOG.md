@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.8.0...v2.9.0) (2026-06-18)
+
+
+### Features
+
+* **deps:** bump @mcarvin/smart-diff to 3.1.0 to remove native git dependency ([#43](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/43)) ([3b74d78](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/3b74d783f0396cfd27970b832a25b8e331795446))
+
 ## [2.8.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.7.0...v2.8.0) (2026-06-16)
 
 
