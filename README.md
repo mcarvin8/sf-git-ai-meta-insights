@@ -14,9 +14,26 @@ Salesforce CLI plugin that generates AI-written Markdown summaries of metadata c
 
 - Salesforce CLI (`sf`)
 - Node.js 20+
-- [Git Bash](https://git-scm.com/install/)
 - A Salesforce DX project with `sfdx-project.json` at the repo root (unless you supply all paths via `--include-package-directory`)
 - An LLM provider — see [Provider configuration](#provider-configuration)
+
+No system Git installation required. The plugin uses a bundled Git binary via [dugite](https://github.com/desktop/dugite).
+
+### Alpine Linux
+
+Dugite's bundled binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Point dugite at your system Git instead by setting these two env vars:
+
+| Variable              | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `LOCAL_GIT_DIRECTORY` | Root of your Git installation (the directory containing `bin/git`)     |
+| `GIT_EXEC_PATH`       | Directory containing Git's subprograms (set if your distro moves them) |
+
+```sh
+export LOCAL_GIT_DIRECTORY=/usr        # uses /usr/bin/git
+export GIT_EXEC_PATH=/usr/lib/git-core # only needed if subprograms are non-standard
+```
+
+Install Git in your image first if needed (`apk add git`). No code changes required.
 
 ## Installation
 
