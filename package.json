@@ -1,6 +1,6 @@
 {
   "name": "sf-git-ai-meta-insights",
-  "description": "Salesforce CLI plugin that generates AI-powered summaries of metadata changes from git diffs.",
+  "description": "Salesforce CLI plugin that generates AI-written Markdown summaries of Salesforce metadata changes between git refs. Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, and any Vercel AI SDK provider.",
   "version": "2.9.0",
   "dependencies": {
     "@mcarvin/smart-diff": "3.1.0",
@@ -55,7 +55,17 @@
     "diff",
     "summary",
     "llm",
-    "changelog"
+    "changelog",
+    "claude",
+    "anthropic",
+    "gemini",
+    "bedrock",
+    "vercel-ai",
+    "sfdx-project",
+    "cicd",
+    "devops",
+    "release-notes",
+    "markdown"
   ],
   "license": "MIT",
   "oclif": {
