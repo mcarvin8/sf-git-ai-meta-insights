@@ -17,13 +17,13 @@ const canCallLlm = isLlmProviderConfigured();
     await writeFile(
       join(projectRoot, 'sfdx-project.json'),
       JSON.stringify({ packageDirectories: [{ path: 'force-app', default: true }] }, null, 2),
-      'utf8'
+      'utf8',
     );
     await mkdir(join(projectRoot, 'force-app', 'main', 'default', 'classes'), { recursive: true });
     await writeFile(
       join(projectRoot, 'force-app', 'main', 'default', 'classes', 'MyClass.cls'),
       'public class MyClass {}',
-      'utf8'
+      'utf8',
     );
     // Ignore the .git-ai/ daemon directory that a locally-installed git-ai trace2
     // listener may drop into the working tree; otherwise `git add .` trips on its lock file.
@@ -38,7 +38,7 @@ const canCallLlm = isLlmProviderConfigured();
     await writeFile(
       join(projectRoot, 'force-app', 'main', 'default', 'classes', 'MyClass.cls'),
       'public class MyClass {\n    // updated\n}\n',
-      'utf8'
+      'utf8',
     );
     execSync('git add .', { cwd: projectRoot, stdio: 'pipe' });
     execSync('git commit -m "Update metadata file"', { cwd: projectRoot, stdio: 'pipe' });
