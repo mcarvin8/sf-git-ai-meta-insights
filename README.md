@@ -13,7 +13,7 @@ Salesforce CLI plugin that generates AI-written Markdown summaries of metadata c
 ## Requirements
 
 - Salesforce CLI (`sf`)
-- Node.js 20+
+- Node.js 22+
 - A Salesforce DX project with `sfdx-project.json` at the repo root (unless you supply all paths via `--include-package-directory`)
 - An LLM provider — see [Provider configuration](#provider-configuration)
 
