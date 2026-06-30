@@ -22,6 +22,7 @@
     }
   },
   "files": {
+    "include": ["src/**", "test/**"],
     "ignore": ["lib/**", "node_modules/**", "coverage/**"]
   }
 }
