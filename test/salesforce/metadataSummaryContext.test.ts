@@ -3,8 +3,8 @@ import { resolveMetadataSummaryTeam } from '../../src/salesforce/metadataSummary
 
 describe('resolveMetadataSummaryTeam', () => {
   beforeEach(() => {
-    delete process.env.METADATA_AUDIT_TEAM;
-    delete process.env.SF_GIT_AI_TEAM;
+    process.env.METADATA_AUDIT_TEAM = undefined;
+    process.env.SF_GIT_AI_TEAM = undefined;
   });
 
   it('prefers the CLI team when provided', () => {

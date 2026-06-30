@@ -59,7 +59,7 @@ export async function readPackageDirectoryRelativePaths(
   const kept = dirs.filter((dir) => {
     // Stryker disable-next-line StringLiteral
     const normalized = dir.replace(/\\/g, '/').toLowerCase();
-    return !ignored.some((ign) => normalized === ign || normalized.startsWith(ign + '/'));
+    return !ignored.some((ign) => normalized === ign || normalized.startsWith(`${ign}/`));
   });
 
   return kept.map((dir) => {
