@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.9.0...v2.9.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **deps:** bump all deps, increase min node version to 22 ([#47](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/47)) ([57c57a3](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/57c57a33044453c03914db571ab587bf00ace5bc))
+
 ## [2.9.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.8.0...v2.9.0) (2026-06-18)
 
 
