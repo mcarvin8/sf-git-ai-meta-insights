@@ -184,6 +184,51 @@ $env:LLM_DEFAULT_HEADERS = '{"Authorization":"Bearer <token>","x-tenant-id":"sal
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
 
+## Use cases
+
+### A) Audit production deployments over a time period
+
+After deploying to production from `main`, generate a summary of all Salesforce metadata changes landed in the last week. Useful for change audits, release notes, or team standup reports.
+
+```bash
+# Find the commit on main from 1 week ago
+FROM=$(git log origin/main -1 --before="1 week ago" --pretty=format:%H)
+
+# Summarize everything deployed since then
+sf sgai metadata summarize --from "$FROM" --to origin/main --output weekly-release-notes.md
+```
+
+Add `--team "Platform Team"` to label the summary, or `--commit-message-include "(deploy|release)"` to filter to deployment commits only.
+
+### B) Review a GitHub PR or GitLab MR before merging
+
+Before merging and deploying a PR or MR, generate an AI summary of the Salesforce metadata it introduces. Useful for code review, impact analysis, or pre-deployment sign-off.
+
+**GitHub PR** — run in CI and post the summary as a sticky PR comment using [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment):
+
+```yaml
+- name: Summarize metadata changes
+  run: sf sgai metadata summarize --from origin/main --to ${{ github.sha }} --output pr-impact.md
+
+- name: Post metadata summary as PR comment
+  if: always() && github.event_name == 'pull_request'
+  uses: marocchino/sticky-pull-request-comment@v3
+  with:
+    header: metadata-impact
+    path: pr-impact.md
+```
+
+The comment is created on first run and updated (not duplicated) on subsequent pushes to the same PR.
+
+**GitLab MR** — same approach, using your MR's source branch:
+
+```bash
+git fetch origin
+sf sgai metadata summarize --from origin/main --to origin/your-mr-branch --output mr-impact.md
+```
+
+Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://docs.gitlab.com/ee/api/notes.html) or your preferred CI comment action.
+
 ## How it works
 
 The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into Markdown summaries using any Vercel AI SDK provider.
