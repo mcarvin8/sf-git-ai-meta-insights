@@ -3,31 +3,32 @@
   "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
   "version": "2.9.0",
   "dependencies": {
-    "@mcarvin/smart-diff": "3.1.0",
-    "@oclif/core": "4.11.4",
-    "@salesforce/core": "8.26.3",
-    "@salesforce/sf-plugins-core": "12.2.6"
+    "@mcarvin/smart-diff": "3.2.0",
+    "@oclif/core": "4.11.11",
+    "@salesforce/core": "8.31.4",
+    "@salesforce/sf-plugins-core": "12.2.25"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
-    "@salesforce/cli-plugins-testkit": "5.3.52",
+    "@salesforce/cli-plugins-testkit": "5.3.62",
     "@salesforce/dev-config": "4.3.3",
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "25.9.4",
     "@vitest/coverage-v8": "4.1.5",
     "husky": "9.1.7",
-    "oclif": "4.23.0",
+    "lint-staged": "17.0.8",
+    "oclif": "4.23.24",
     "shx": "0.4.0",
     "ts-node": "10.9.2",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "4.1.5",
-    "wireit": "0.14.12"
+    "wireit": "0.14.13"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "files": [
     "/lib",
