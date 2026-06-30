@@ -29,13 +29,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "files": [
-    "/lib",
-    "/messages",
-    "/oclif.manifest.json",
-    "/oclif.lock",
-    "/CHANGELOG.md"
-  ],
+  "files": ["/lib", "/messages", "/oclif.manifest.json", "/oclif.lock", "/CHANGELOG.md"],
   "keywords": [
     "force",
     "salesforce",
@@ -68,9 +62,7 @@
     "commands": "./lib/commands",
     "bin": "sf",
     "topicSeparator": " ",
-    "devPlugins": [
-      "@oclif/plugin-help"
-    ],
+    "devPlugins": ["@oclif/plugin-help"],
     "topics": {
       "sgai": {
         "description": "description for sgai",
@@ -104,85 +96,44 @@
   },
   "wireit": {
     "build": {
-      "dependencies": [
-        "compile",
-        "lint"
-      ]
+      "dependencies": ["compile", "lint"]
     },
     "compile": {
       "command": "tsc -p . --pretty --incremental",
-      "files": [
-        "src/**/*.ts",
-        "**/tsconfig.json",
-        "messages/**"
-      ],
-      "output": [
-        "lib/**",
-        "*.tsbuildinfo"
-      ],
+      "files": ["src/**/*.ts", "**/tsconfig.json", "messages/**"],
+      "output": ["lib/**", "*.tsbuildinfo"],
       "clean": "if-file-deleted"
     },
     "format": {
       "command": "biome format --write src test",
-      "files": [
-        "src/**/*.ts",
-        "test/**/*.ts",
-        "biome.json"
-      ],
+      "files": ["src/**/*.ts", "test/**/*.ts", "biome.json"],
       "output": []
     },
     "lint": {
       "command": "biome lint src test",
-      "files": [
-        "src/**/*.ts",
-        "test/**/*.ts",
-        "messages/**",
-        "biome.json"
-      ],
+      "files": ["src/**/*.ts", "test/**/*.ts", "messages/**", "biome.json"],
       "output": []
     },
     "prepack": {
       "command": "oclif manifest && oclif readme",
-      "files": [
-        "src/commands/sgai/metadata/summarize.ts",
-        "messages/sgai.metadata.summarize.md",
-        "README.md"
-      ],
-      "dependencies": [
-        "build"
-      ],
-      "output": [
-        "README.md"
-      ],
+      "files": ["src/commands/sgai/metadata/summarize.ts", "messages/sgai.metadata.summarize.md", "README.md"],
+      "dependencies": ["build"],
+      "output": ["README.md"],
       "clean": false
     },
     "test:compile": {
       "command": "tsc -p \"./test\" --pretty",
-      "files": [
-        "test/**/*.ts",
-        "**/tsconfig.json"
-      ],
+      "files": ["test/**/*.ts", "**/tsconfig.json"],
       "output": []
     },
     "test": {
-      "dependencies": [
-        "test:compile",
-        "test:only",
-        "lint"
-      ]
+      "dependencies": ["test:compile", "test:only", "lint"]
     },
     "test:nuts": {
       "command": "vitest run --config ./vitest.nut.config.ts && shx rm -f oclif.manifest.json oclif.lock *.tsbuildinfo",
-      "files": [
-        "test/**/*.nut.ts",
-        "**/tsconfig.json",
-        "vitest.nut.config.ts"
-      ],
+      "files": ["test/**/*.nut.ts", "**/tsconfig.json", "vitest.nut.config.ts"],
       "output": [],
-      "dependencies": [
-        "build",
-        "prepack"
-      ]
+      "dependencies": ["build", "prepack"]
     },
     "test:only": {
       "command": "vitest run --coverage",
@@ -190,13 +141,7 @@
         "FORCE_COLOR": "2",
         "NODE_OPTIONS": "--experimental-vm-modules"
       },
-      "files": [
-        "test/**/*.ts",
-        "src/**/*.ts",
-        "**/tsconfig.json",
-        "!*.nut.ts",
-        "vitest.config.ts"
-      ],
+      "files": ["test/**/*.ts", "src/**/*.ts", "**/tsconfig.json", "!*.nut.ts", "vitest.config.ts"],
       "output": []
     }
   },

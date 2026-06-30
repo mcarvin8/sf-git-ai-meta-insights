@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { join, resolve, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 import { getRepoRoot } from '@mcarvin/smart-diff';
 

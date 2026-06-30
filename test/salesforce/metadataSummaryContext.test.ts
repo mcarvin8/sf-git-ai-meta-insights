@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { resolveMetadataSummaryTeam } from '../../src/salesforce/metadataSummaryContext.js';
 
 describe('resolveMetadataSummaryTeam', () => {
   beforeEach(() => {
-    process.env.METADATA_AUDIT_TEAM = undefined;
-    process.env.SF_GIT_AI_TEAM = undefined;
+    // biome-ignore lint/performance/noDelete: process.env assignment coerces undefined to the string "undefined"
+    delete process.env.METADATA_AUDIT_TEAM;
+    // biome-ignore lint/performance/noDelete: process.env assignment coerces undefined to the string "undefined"
+    delete process.env.SF_GIT_AI_TEAM;
   });
 
   it('prefers the CLI team when provided', () => {

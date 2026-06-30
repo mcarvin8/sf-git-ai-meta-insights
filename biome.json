@@ -22,10 +22,6 @@
     }
   },
   "files": {
-    "ignore": [
-      "lib/**",
-      "node_modules/**",
-      "coverage/**"
-    ]
+    "ignore": ["lib/**", "node_modules/**", "coverage/**"]
   }
 }
