@@ -9,21 +9,17 @@
     "@salesforce/sf-plugins-core": "12.2.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
     "@salesforce/cli-plugins-testkit": "5.3.52",
     "@salesforce/dev-config": "4.3.3",
-    "@salesforce/prettier-config": "0.0.4",
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "25.9.4",
     "@vitest/coverage-v8": "4.1.5",
-    "eslint-config-salesforce-typescript": "4.0.1",
-    "eslint-plugin-sf-plugin": "1.18.6",
     "husky": "9.1.7",
     "oclif": "4.23.0",
-    "prettier": "3.8.4",
-    "pretty-quick": "4.2.2",
     "shx": "0.4.0",
     "ts-node": "10.9.2",
     "typescript": "5.9.3",
@@ -89,7 +85,9 @@
   },
   "scripts": {
     "build": "wireit",
-    "clean:lib": "shx rm -rf lib coverage .nyc_output",
+    "clean": "wireit",
+    "clean:build": "wireit",
+    "clean:package-manager": "wireit",
     "compile": "wireit",
     "format": "wireit",
     "lint": "wireit",
@@ -113,6 +111,35 @@
         "lint"
       ]
     },
+    "clean": {
+      "command": "shx rm -rf 'reports/*' oclif.manifest.json oclif.lock package.tgz 'stderr*.txt' 'stdout*.txt' '.stryker-tmp/*'",
+      "files": [
+        ".stryker-tmp/*",
+        "lib",
+        "oclif.manifest.json",
+        "oclif.lock",
+        "package.tgz",
+        "reports/*",
+        "stderr*.txt",
+        "stdout*.txt"
+      ],
+      "dependencies": [
+        "clean:build"
+      ]
+    },
+    "clean:build": {
+      "command": "shx rm -rf lib .wireit",
+      "files": [
+        ".wireit/*",
+        "lib/*"
+      ]
+    },
+    "clean:package-manager": {
+      "command": "shx rm -rf node_modules tsconfig.tsbuildinfo",
+      "files": [
+        "node_modules/*"
+      ]
+    },
     "compile": {
       "command": "tsc -p . --pretty --incremental",
       "files": [
@@ -127,22 +154,21 @@
       "clean": "if-file-deleted"
     },
     "format": {
-      "command": "prettier --write \"+(src|test)/**/*.+(ts|js|json)\"",
+      "command": "biome format --write src test",
       "files": [
         "src/**/*.ts",
         "test/**/*.ts",
-        ".prettier*"
+        "biome.json"
       ],
       "output": []
     },
     "lint": {
-      "command": "eslint src test --color --cache --cache-location .eslintcache",
+      "command": "biome lint src test",
       "files": [
         "src/**/*.ts",
         "test/**/*.ts",
         "messages/**",
-        "**/.eslint*",
-        "**/tsconfig.json"
+        "biome.json"
       ],
       "output": []
     },
