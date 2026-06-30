@@ -1,6 +1,6 @@
 {
   "name": "sf-git-ai-meta-insights",
-  "description": "Salesforce CLI plugin that generates AI-written Markdown summaries of Salesforce metadata changes between git refs.",
+  "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
   "version": "2.9.0",
   "dependencies": {
     "@mcarvin/smart-diff": "3.1.0",
