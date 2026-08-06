@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.9.1...v3.0.0) (2026-08-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **engines:** minimum supported node version raised from 22.0.0 to 22.19.0.
+
+### Bug Fixes
+
+* **engines:** raise node engine floor to 22.19.0 to match dep tree ([#50](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/50)) ([d696baa](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/d696baa4067de73720e2f477487b65c97e6d41f6))
+
 ## [2.9.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.9.0...v2.9.1) (2026-06-30)
 
 
