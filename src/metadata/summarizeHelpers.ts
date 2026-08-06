@@ -1,6 +1,6 @@
-import { SfError } from '@salesforce/core';
 import type { CommitInfo } from '@mcarvin/smart-diff';
 import { filterCommitsByMessageRegexes } from '@mcarvin/smart-diff';
+import { SfError } from '@salesforce/core';
 import {
   type GitClient,
   getSalesforceMetadataIncludeFolders,
@@ -110,10 +110,11 @@ export function validateCommitMessageRegexes(patterns: string[], kind: 'include'
       const needle =
         kind === 'include' ? 'Invalid commit message include pattern' : 'Invalid commit message exclude pattern';
       if (message.includes(needle)) {
-        throw new SfError(
-          `Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`,
-          kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude',
-        );
+        throw SfError.create({
+          message: `Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`,
+          name: kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude',
+          cause: err,
+        });
       }
       throw err;
     }

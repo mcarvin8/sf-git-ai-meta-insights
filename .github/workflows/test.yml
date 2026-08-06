@@ -10,6 +10,28 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Check unused dependencies
+        run: npm run lint:dependencies
+
+      - name: Check Node.js engine versions
+        run: npm run lint:engine
+
   unit-tests:
     name: Unit Tests (${{ matrix.os }}, node ${{ matrix.node-version }})
     runs-on: ${{ matrix.os }}
@@ -17,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ['22', '24', '25']
+        node-version: ['22', '24', '26']
     steps:
       - name: Configure git longpaths if on Windows
         if: ${{ runner.os == 'Windows' }}
@@ -60,7 +82,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ['22', '24', '25']
+        node-version: ['22', '24', '26']
     steps:
       - name: Configure git longpaths if on Windows
         if: ${{ runner.os == 'Windows' }}
