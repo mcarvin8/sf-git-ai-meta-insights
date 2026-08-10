@@ -1,13 +1,14 @@
 import { writeFile } from 'node:fs/promises';
-import { SfError } from '@salesforce/core';
 import {
   createGitClient,
   filterCommitsByMessageRegexes,
   getCommits,
   isLlmProviderConfigured,
   LLM_GATEWAY_REQUIRED_MESSAGE,
-  summarizeGitDiff,
+  type LlmUsageReport,
+  summarizeGitDiffWithUsage,
 } from '@mcarvin/smart-diff';
+import { SfError } from '@salesforce/core';
 
 import { SALESFORCE_METADATA_SYSTEM_PROMPT } from '../ai/salesforceMetadataPrompt.js';
 import { resolveMetadataSummaryTeam } from '../salesforce/metadataSummaryContext.js';
@@ -43,7 +44,7 @@ export async function runMetadataSummarize(
   noPackageDirectoriesError: string,
   noCommitsAfterFilterError: (from: string, to: string, include: string, exclude: string) => string,
   log: (message: string) => void,
-): Promise<{ path: string }> {
+): Promise<{ path: string; usage: LlmUsageReport }> {
   validateMaxDiffCharsRange(options['max-diff-chars']);
   validateContextLinesRange(options['context-lines']);
   validateMaxHunkLinesRange(options['max-hunk-lines']);
@@ -86,7 +87,7 @@ export async function runMetadataSummarize(
 
   const teamName = resolveMetadataSummaryTeam(options.team);
 
-  const summary = await summarizeGitDiff({
+  const { summary, usage } = await summarizeGitDiffWithUsage({
     from,
     to: options.to,
     git,
@@ -109,5 +110,5 @@ export async function runMetadataSummarize(
   await writeFile(options.output, summary, 'utf8');
   log(`Generated metadata summary at ${options.output}`);
 
-  return { path: options.output };
+  return { path: options.output, usage };
 }

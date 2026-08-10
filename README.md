@@ -233,6 +233,8 @@ Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://doc
 
 The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into Markdown summaries using any Vercel AI SDK provider.
 
+After writing the summary file, the command logs LLM usage (request count, input/output/cached/total tokens) to help track model spend.
+
 ## License
 
 [MIT](LICENSE.md)

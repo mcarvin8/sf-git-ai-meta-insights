@@ -1,5 +1,6 @@
-import { SfCommand, Flags } from '@salesforce/sf-plugins-core';
+import type { LlmUsageReport } from '@mcarvin/smart-diff';
 import { Messages } from '@salesforce/core';
+import { Flags, SfCommand } from '@salesforce/sf-plugins-core';
 
 import { runMetadataSummarize, type SummarizeOptions } from '../../../metadata/summarizeCore.js';
 
@@ -9,6 +10,10 @@ const messages = Messages.loadMessages('sf-git-ai-meta-insights', 'sgai.metadata
 export type SgaiMetadataSummarizeResult = {
   path: string;
 };
+
+function formatUsage(usage: LlmUsageReport): string {
+  return `LLM usage: ${usage.requestCount} request(s), ${usage.inputTokens} input tokens, ${usage.outputTokens} output tokens, ${usage.cachedInputTokens} cached input tokens, ${usage.totalTokens} total tokens.`;
+}
 
 export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummarizeResult> {
   public static override readonly summary = messages.getMessage('summary');
@@ -110,11 +115,13 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
 
   public async run(): Promise<SgaiMetadataSummarizeResult> {
     const { flags } = await this.parse(SgaiMetadataSummarize);
-    return runMetadataSummarize(
+    const { path, usage } = await runMetadataSummarize(
       flags as SummarizeOptions,
       messages.getMessage('errors.noPackageDirectories'),
       (from, to, include, exclude) => messages.getMessage('errors.noCommitsAfterFilter', [from, to, include, exclude]),
       (msg) => this.log(msg),
     );
+    this.log(formatUsage(usage));
+    return { path };
   }
 }
