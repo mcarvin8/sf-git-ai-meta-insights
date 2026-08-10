@@ -1,7 +1,7 @@
 {
   "name": "sf-git-ai-meta-insights",
   "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "dependencies": {
     "@mcarvin/smart-diff": "3.3.0",
     "@oclif/core": "4.13.3",

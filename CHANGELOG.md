@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v3.0.0...v3.1.0) (2026-08-10)
+
+
+### Features
+
+* **flags:** add --map-reduce, --redact-secrets, --max-retries ([#54](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/54)) ([9bf30aa](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/9bf30aa0749ae4e61cebbaf6862b2dd2b612aa14))
+* **usage:** report LLM token usage after summarize ([#52](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/52)) ([afbc546](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/afbc546309d5bd982c756c68bd4062f2d21a852c))
+
 ## [3.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v2.9.1...v3.0.0) (2026-08-06)
 
 
