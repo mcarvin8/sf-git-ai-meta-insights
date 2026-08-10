@@ -134,6 +134,30 @@ Merge smart-diff's built-in "noise" exclude list into the excluded paths.
 
 When set, the plugin merges smart-diff's `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into the set of excluded pathspecs passed to git. This is additive with any `--exclude-package-directory` values you provide. Defaults to false, because Salesforce DX repos rarely contain these folders inside package directories; enable it if your repo does.
 
+# flags.map-reduce.summary
+
+Split oversized diffs into per-file batches instead of truncating.
+
+# flags.map-reduce.description
+
+By default, a diff over `--max-diff-chars` is hard-truncated and a notice is prepended to the summary. When set, an oversized diff is instead split into per-file batches, each summarized independently, then synthesized into one final summary. This costs one extra LLM call per batch plus a reduce call, so it is slower and more expensive than a single request — use it when preserving coverage of the full diff matters more than latency or cost. No-op when the diff already fits within `--max-diff-chars`. Defaults to false.
+
+# flags.redact-secrets.summary
+
+Mask likely secrets/credentials in the diff before sending it to the LLM.
+
+# flags.redact-secrets.description
+
+Masks values that look like cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments before the diff text is sent to the model. Useful for Salesforce metadata that can carry secrets in Custom Settings, Named Credentials, or scratch org config. Defaults to false.
+
+# flags.max-retries.summary
+
+Retry count for transient LLM call failures.
+
+# flags.max-retries.description
+
+Number of retries for transient LLM call failures such as rate limits, 5xx responses, and network errors. Must be a non-negative integer. When omitted, uses `LLM_MAX_RETRIES` if set, otherwise the provider default (2).
+
 # examples
 
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md
@@ -141,3 +165,5 @@ When set, the plugin merges smart-diff's `DEFAULT_NOISE_EXCLUDES` list (lockfile
 - <%= config.bin %> <%= command.id %> --team "Revenue Cloud" --from release/cut --to HEAD
 - <%= config.bin %> <%= command.id %> --from abc1234 --to HEAD
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --ignore-whitespace --context-lines 1 --strip-diff-preamble --max-hunk-lines 400
+- <%= config.bin %> <%= command.id %> --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
+- <%= config.bin %> <%= command.id %> --from HEAD~1 --redact-secrets

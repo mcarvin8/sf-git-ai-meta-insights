@@ -111,6 +111,23 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       required: false,
       default: false,
     }),
+    'map-reduce': Flags.boolean({
+      summary: messages.getMessage('flags.map-reduce.summary'),
+      description: messages.getMessage('flags.map-reduce.description'),
+      required: false,
+      default: false,
+    }),
+    'redact-secrets': Flags.boolean({
+      summary: messages.getMessage('flags.redact-secrets.summary'),
+      description: messages.getMessage('flags.redact-secrets.description'),
+      required: false,
+      default: false,
+    }),
+    'max-retries': Flags.integer({
+      summary: messages.getMessage('flags.max-retries.summary'),
+      description: messages.getMessage('flags.max-retries.description'),
+      required: false,
+    }),
   };
 
   public async run(): Promise<SgaiMetadataSummarizeResult> {

@@ -19,6 +19,7 @@ import {
   validateContextLinesRange,
   validateMaxDiffCharsRange,
   validateMaxHunkLinesRange,
+  validateMaxRetriesRange,
 } from './summarizeHelpers.js';
 
 export type SummarizeOptions = {
@@ -37,6 +38,9 @@ export type SummarizeOptions = {
   'strip-diff-preamble': boolean;
   'max-hunk-lines'?: number;
   'exclude-default-noise': boolean;
+  'map-reduce': boolean;
+  'redact-secrets': boolean;
+  'max-retries'?: number;
 };
 
 export async function runMetadataSummarize(
@@ -48,6 +52,7 @@ export async function runMetadataSummarize(
   validateMaxDiffCharsRange(options['max-diff-chars']);
   validateContextLinesRange(options['context-lines']);
   validateMaxHunkLinesRange(options['max-hunk-lines']);
+  validateMaxRetriesRange(options['max-retries']);
 
   if (!isLlmProviderConfigured()) {
     throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
@@ -105,6 +110,9 @@ export async function runMetadataSummarize(
     stripDiffPreamble: options['strip-diff-preamble'] || undefined,
     maxHunkLines: options['max-hunk-lines'],
     excludeDefaultNoise: options['exclude-default-noise'] || undefined,
+    mapReduce: options['map-reduce'] || undefined,
+    redactSecrets: options['redact-secrets'] || undefined,
+    maxRetries: options['max-retries'],
   });
 
   await writeFile(options.output, summary, 'utf8');
