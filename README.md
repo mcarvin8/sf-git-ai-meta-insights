@@ -156,7 +156,11 @@ Provider resolution is handled by [`@mcarvin/smart-diff`](https://github.com/mca
 | `LLM_MODEL`                                      | Overrides the provider's default model. Also settable per-run via `--model`.                                   |
 | `OPENAI_BASE_URL` / `LLM_BASE_URL`               | Base URL for an OpenAI-compatible gateway. Presence alone auto-selects the `openai-compatible` provider.       |
 | `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` | JSON object of extra headers for OpenAI / OpenAI-compatible requests. `LLM_*` overrides `OPENAI_*` key-by-key. |
+| `LLM_PROVIDER_NAME`                              | Display name used when `openai-compatible` is active (defaults to `openai-compatible`).                        |
 | `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS`   | Max unified diff characters sent to the model (default ~120k). Also settable via `--max-diff-chars`.           |
+| `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS`           | Max completion tokens (default 4000).                                                                          |
+| `LLM_TEMPERATURE`                                | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic, higher = more varied prose.    |
+| `LLM_MAX_RETRIES`                                | Retry count for transient LLM call failures (rate limits, 5xx, network errors). Default 2; `0` disables retries. |
 
 `LLM_*` variants override their `OPENAI_*` counterparts when both are set. For the full env var reference, see the [`@mcarvin/smart-diff` documentation](https://github.com/mcarvin8/smart-diff#provider-configuration).
 
