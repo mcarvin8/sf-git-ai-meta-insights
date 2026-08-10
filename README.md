@@ -16,8 +16,7 @@ Salesforce CLI plugin that generates AI-written Markdown summaries of metadata c
 - Node.js 22.19 or later
 - A Salesforce DX project with `sfdx-project.json` at the repo root (unless you supply all paths via `--include-package-directory`)
 - An LLM provider — see [Provider configuration](#provider-configuration)
-
-No system Git installation required. The plugin uses a bundled Git binary via [dugite](https://github.com/desktop/dugite).
+- No system Git installation required for **glibc** systems - this plugin uses a bundled Git binary via [dugite](https://github.com/desktop/dugite)
 
 ### Alpine Linux
 
