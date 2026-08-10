@@ -44,6 +44,8 @@ const MINIMAL_OPTIONS: SummarizeOptions = {
   'ignore-whitespace': false,
   'strip-diff-preamble': false,
   'exclude-default-noise': false,
+  'map-reduce': false,
+  'redact-secrets': false,
 };
 
 const FULL_OPTIONS: SummarizeOptions = {
@@ -62,6 +64,9 @@ const FULL_OPTIONS: SummarizeOptions = {
   'strip-diff-preamble': true,
   'max-hunk-lines': 500,
   'exclude-default-noise': true,
+  'map-reduce': true,
+  'redact-secrets': true,
+  'max-retries': 4,
 };
 
 describe('runMetadataSummarize', () => {
@@ -93,6 +98,9 @@ describe('runMetadataSummarize', () => {
         ignoreWhitespace: undefined,
         stripDiffPreamble: undefined,
         excludeDefaultNoise: undefined,
+        mapReduce: undefined,
+        redactSecrets: undefined,
+        maxRetries: undefined,
         teamName: undefined,
       }),
     );
@@ -117,6 +125,9 @@ describe('runMetadataSummarize', () => {
         maxDiffChars: 10_000,
         contextLines: 5,
         maxHunkLines: 500,
+        mapReduce: true,
+        redactSecrets: true,
+        maxRetries: 4,
         teamName: 'Platform',
       }),
     );
@@ -149,6 +160,12 @@ describe('runMetadataSummarize', () => {
   it('throws SfError when max-hunk-lines is below valid range', async () => {
     await expect(
       runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-hunk-lines': 0 }, 'no pkg dirs', () => 'no commits', vi.fn()),
+    ).rejects.toBeInstanceOf(SfError);
+  });
+
+  it('throws SfError when max-retries is negative', async () => {
+    await expect(
+      runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-retries': -1 }, 'no pkg dirs', () => 'no commits', vi.fn()),
     ).rejects.toBeInstanceOf(SfError);
   });
 

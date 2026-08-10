@@ -84,6 +84,9 @@ Diffs Salesforce metadata between two Git refs, optionally filters commits by me
 | `--strip-diff-preamble`       |       | No       | `false`               | Remove low-signal `diff --git`, `index`, `mode`, `similarity`, `rename`, and `copy` lines. Hunk headers (`--- a/…`, `+++ b/…`, `@@`) are kept. |
 | `--max-hunk-lines`            |       | No       |                       | Cap each hunk body at N lines (1–100,000); excess is replaced with a single elision marker. Hunk headers and change counts stay intact.        |
 | `--exclude-default-noise`     |       | No       | `false`               | Exclude common noise paths: lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`.                                    |
+| `--map-reduce`                |       | No       | `false`               | Split an oversized diff into per-file batches and synthesize one summary, instead of hard-truncating it. Costs extra LLM calls; no-op if the diff already fits `--max-diff-chars`. |
+| `--redact-secrets`            |       | No       | `false`               | Mask likely secrets/credentials (API keys, tokens, PEM blocks, JWTs, Bearer headers, etc.) in the diff before sending it to the model.         |
+| `--max-retries`               |       | No       | `2`                   | Retry count for transient LLM call failures (rate limits, 5xx, network errors). Also settable via `LLM_MAX_RETRIES`.                           |
 
 #### Examples
 
@@ -118,6 +121,12 @@ Override the model:
 sf sgai metadata summarize --from HEAD~1 --model claude-3-5-sonnet-latest
 ```
 
+Mask likely secrets before the diff leaves your machine:
+
+```bash
+sf sgai metadata summarize --from HEAD~1 --redact-secrets
+```
+
 Reduce LLM token cost by shaping the diff:
 
 ```bash
@@ -130,6 +139,14 @@ sf sgai metadata summarize \
 ```
 
 > The diff-shaping flags only affect the text sent to the model. The structured change inventory (file counts, additions, deletions) is computed separately and is always accurate. See the [`@mcarvin/smart-diff` "Reducing tokens" guide](https://github.com/mcarvin8/smart-diff#reducing-tokens) for details.
+
+Preserve full coverage of a diff that exceeds `--max-diff-chars` instead of truncating it:
+
+```bash
+sf sgai metadata summarize --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
+```
+
+This summarizes each changed file in its own batch, then synthesizes one final summary — slower and more expensive than a single request, but nothing past the character limit is dropped.
 
 ## Provider configuration
 

@@ -38,6 +38,13 @@ export function validateMaxHunkLinesRange(maxHunkLines: number | undefined): voi
   }
 }
 
+export function validateMaxRetriesRange(maxRetries: number | undefined): void {
+  if (maxRetries === undefined) return;
+  if (!Number.isInteger(maxRetries) || maxRetries < 0) {
+    throw new SfError(`--max-retries must be a non-negative integer (received ${maxRetries}).`, 'InvalidMaxRetries');
+  }
+}
+
 export type CommitMessageRegexFlags = {
   'commit-message-include'?: string[];
   'commit-message-exclude'?: string[];
