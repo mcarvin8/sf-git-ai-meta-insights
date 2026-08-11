@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v3.1.1...v4.0.0) (2026-08-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* smart-diff v4 drops the bundled native git binary (dugite) in favor of tsgit, a pure-TypeScript git implementation. createGitClient is now async, and GitClient is a tsgit Repository instance rather than a dugite wrapper. Minimum Node.js version raised to 22.22.1 to match.
+
+### Features
+
+* bump smart-diff to v4, add --from-merge-base flag ([#57](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/57)) ([774ca70](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/774ca706aeff8798e6e6b726648ee1104b71884f))
+
 ## [3.1.1](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v3.1.0...v3.1.1) (2026-08-10)
 
 
