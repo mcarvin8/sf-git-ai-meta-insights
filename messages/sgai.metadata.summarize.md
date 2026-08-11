@@ -20,7 +20,7 @@ Start reference for the git diff range.
 
 # flags.from.description
 
-Required. A git commit hash or ref for the beginning of the diff range (for example a merge base, tag, or explicit commit). You must set this for your platform and workflow; there is no default.
+A git commit hash or ref for the beginning of the diff range (for example a merge base, tag, or explicit commit). Required unless `--from-merge-base` is set instead; mutually exclusive with it.
 
 # flags.to.summary
 
@@ -158,6 +158,14 @@ Retry count for transient LLM call failures.
 
 Number of retries for transient LLM call failures such as rate limits, 5xx responses, and network errors. Must be a non-negative integer. When omitted, uses `LLM_MAX_RETRIES` if set, otherwise the provider default (2).
 
+# flags.from-merge-base.summary
+
+Resolve the diff start ref as the merge base of `--to` and this ref, instead of `--from`.
+
+# flags.from-merge-base.description
+
+A git ref. The start of the diff range is resolved as the merge base of `--to` and this ref, e.g. `--to develop --from-merge-base main` is equivalent to `--from $(git merge-base develop main) --to develop`, resolved in-process with no local git binary required. Required unless `--from` is set instead; mutually exclusive with it.
+
 # examples
 
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md
@@ -167,3 +175,4 @@ Number of retries for transient LLM call failures such as rate limits, 5xx respo
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --ignore-whitespace --context-lines 1 --strip-diff-preamble --max-hunk-lines 400
 - <%= config.bin %> <%= command.id %> --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
 - <%= config.bin %> <%= command.id %> --from HEAD~1 --redact-secrets
+- <%= config.bin %> <%= command.id %> --to develop --from-merge-base main
