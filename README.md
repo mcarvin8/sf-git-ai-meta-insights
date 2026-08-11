@@ -8,8 +8,6 @@
 
 Salesforce CLI plugin that generates AI-written Markdown summaries of metadata changes between two Git refs. Supports every LLM provider in the [Vercel AI SDK](https://sdk.vercel.ai): OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway.
 
-![Markdown Summary Example](https://raw.githubusercontent.com/mcarvin8/sf-git-ai-meta-insights/main/.github/images/summary-example.png)
-
 ## Requirements
 
 - Salesforce CLI (`sf`)
