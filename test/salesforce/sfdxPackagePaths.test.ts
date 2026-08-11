@@ -1,7 +1,7 @@
-import { writeFile, rm, mkdtemp } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   type GitClient,
   getSalesforceMetadataIncludeFolders,
@@ -24,13 +24,13 @@ describe('getSalesforceMetadataIncludeFolders', () => {
       JSON.stringify({ packageDirectories: [{ path: 'force-app' }] }),
       'utf8',
     );
-    const run = vi.fn(async () => tmpRoot);
-    const git = { run } as unknown as GitClient;
+    const getRepoRoot = vi.fn(async () => tmpRoot);
+    const git = { primitives: { getRepoRoot } } as unknown as GitClient;
 
     const paths = await getSalesforceMetadataIncludeFolders(git);
 
     expect(paths).toEqual(['force-app']);
-    expect(run).toHaveBeenCalledWith(['rev-parse', '--show-toplevel']);
+    expect(getRepoRoot).toHaveBeenCalled();
 
     await rm(tmpRoot, { recursive: true, force: true });
   });

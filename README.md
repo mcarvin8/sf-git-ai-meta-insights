@@ -13,26 +13,10 @@ Salesforce CLI plugin that generates AI-written Markdown summaries of metadata c
 ## Requirements
 
 - Salesforce CLI (`sf`)
-- Node.js 22.19 or later
+- Node.js 22.22.1 or later
 - A Salesforce DX project with `sfdx-project.json` at the repo root (unless you supply all paths via `--include-package-directory`)
 - An LLM provider — see [Provider configuration](#provider-configuration)
-- No system Git installation required for **glibc** systems - this plugin uses a bundled Git binary via [dugite](https://github.com/desktop/dugite)
-
-### Alpine Linux
-
-Dugite's bundled binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Point dugite at your system Git instead by setting these two env vars:
-
-| Variable              | Purpose                                                                |
-| --------------------- | ---------------------------------------------------------------------- |
-| `LOCAL_GIT_DIRECTORY` | Root of your Git installation (the directory containing `bin/git`)     |
-| `GIT_EXEC_PATH`       | Directory containing Git's subprograms (set if your distro moves them) |
-
-```sh
-export LOCAL_GIT_DIRECTORY=/usr        # uses /usr/bin/git
-export GIT_EXEC_PATH=/usr/lib/git-core # only needed if subprograms are non-standard
-```
-
-Install Git in your image first if needed (`apk add git`). No code changes required.
+- No local Git binary required - the git repository is read directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies
 
 ## Installation
 
@@ -68,7 +52,8 @@ Diffs Salesforce metadata between two Git refs, optionally filters commits by me
 
 | Flag                          | Short | Required | Default               | Description                                                                                                                                    |
 | ----------------------------- | ----- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--from`                      | `-f`  | **Yes**  |                       | Start ref for the diff range (e.g. `HEAD~1`, a tag, or a commit hash).                                                                         |
+| `--from`                      | `-f`  | One of `--from` / `--from-merge-base` |         | Start ref for the diff range (e.g. `HEAD~1`, a tag, or a commit hash). Mutually exclusive with `--from-merge-base`.                            |
+| `--from-merge-base`           | `-b`  | One of `--from` / `--from-merge-base` |         | Resolve the start ref as the merge base of `--to` and this ref (e.g. `--to develop --from-merge-base main`), resolved in-process with no local git binary required. Mutually exclusive with `--from`. |
 | `--to`                        | `-t`  | No       | `HEAD`                | End ref for the diff range.                                                                                                                    |
 | `--commit-message-include`    | `-m`  | No       |                       | Include only commits whose messages match these regex patterns (repeatable, OR logic).                                                         |
 | `--commit-message-exclude`    | `-e`  | No       |                       | Exclude commits whose messages match these regex patterns (repeatable, OR logic).                                                              |
@@ -106,6 +91,12 @@ Save output to a custom file:
 
 ```bash
 sf sgai metadata summarize --from HEAD~5 --to HEAD --output changes.md
+```
+
+Resolve the start ref as the merge base of two branches (no local git binary required):
+
+```bash
+sf sgai metadata summarize --to develop --from-merge-base main
 ```
 
 Include only commits matching a pattern:

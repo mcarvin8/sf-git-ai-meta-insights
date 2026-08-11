@@ -9,6 +9,7 @@ vi.mock('@mcarvin/smart-diff', async (importOriginal) => {
     isLlmProviderConfigured: vi.fn(),
     createGitClient: vi.fn(),
     getCommits: vi.fn(),
+    getMergeBase: vi.fn(),
     filterCommitsByMessageRegexes: vi.fn(),
     summarizeGitDiffWithUsage: vi.fn(),
   };
@@ -28,6 +29,7 @@ import {
   createGitClient,
   filterCommitsByMessageRegexes,
   getCommits,
+  getMergeBase,
   isLlmProviderConfigured,
   summarizeGitDiffWithUsage,
 } from '@mcarvin/smart-diff';
@@ -180,6 +182,49 @@ describe('runMetadataSummarize', () => {
     expect(caught).toBeInstanceOf(SfError);
     expect((caught as SfError).message).toBe('no package directories!');
     expect((caught as SfError).name).toBe('NoPackageDirectories');
+  });
+
+  it('resolves from via getMergeBase when from-merge-base is set', async () => {
+    vi.mocked(getMergeBase).mockResolvedValue('merge-base-sha');
+    const log = vi.fn();
+    const options: SummarizeOptions = {
+      output: 'summary.md',
+      'from-merge-base': 'main',
+      to: 'develop',
+      'ignore-whitespace': false,
+      'strip-diff-preamble': false,
+      'exclude-default-noise': false,
+      'map-reduce': false,
+      'redact-secrets': false,
+    };
+
+    const result = await runMetadataSummarize(options, 'no package dirs', () => 'no commits', log);
+
+    expect(result).toEqual({ path: 'summary.md', usage: USAGE });
+    expect(getMergeBase).toHaveBeenCalledWith(expect.anything(), 'develop', 'main');
+    expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'merge-base-sha', 'develop');
+    expect(summarizeGitDiffWithUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ from: 'merge-base-sha', to: 'develop' }),
+    );
+  });
+
+  it('throws SfError when neither from nor from-merge-base is provided', async () => {
+    const options: SummarizeOptions = {
+      output: 'summary.md',
+      'ignore-whitespace': false,
+      'strip-diff-preamble': false,
+      'exclude-default-noise': false,
+      'map-reduce': false,
+      'redact-secrets': false,
+    };
+    let caught: unknown;
+    try {
+      await runMetadataSummarize(options, 'no pkg dirs', () => 'no commits', vi.fn());
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(SfError);
+    expect((caught as SfError).name).toBe('MissingFromRef');
   });
 
   it('calls noCommitsAfterFilterError with correct args and throws when commits filter to zero', async () => {

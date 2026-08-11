@@ -3,6 +3,7 @@ import {
   createGitClient,
   filterCommitsByMessageRegexes,
   getCommits,
+  getMergeBase,
   isLlmProviderConfigured,
   LLM_GATEWAY_REQUIRED_MESSAGE,
   type LlmUsageReport,
@@ -23,7 +24,8 @@ import {
 } from './summarizeHelpers.js';
 
 export type SummarizeOptions = {
-  from: string;
+  from?: string;
+  'from-merge-base'?: string;
   to?: string;
   'commit-message-include'?: string[];
   'commit-message-exclude'?: string[];
@@ -58,12 +60,16 @@ export async function runMetadataSummarize(
     throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
   }
 
-  const from = options.from;
   const to = options.to ?? 'HEAD';
   const { include: commitMessageIncludeRegexes, exclude: commitMessageExcludeFromFlag } =
     getValidatedCommitMessageRegexLists(options);
 
-  const git = createGitClient(process.cwd());
+  const git = await createGitClient(process.cwd());
+  const from = options['from-merge-base'] ? await getMergeBase(git, to, options['from-merge-base']) : options.from;
+  if (!from) {
+    throw new SfError('Either --from or --from-merge-base must be provided.', 'MissingFromRef');
+  }
+
   const { includeFolders, excludePackageDirectories } = await resolveIncludeFoldersAndExclude(git, options);
 
   if (includeFolders.length === 0) {
