@@ -50,8 +50,8 @@ Diffs Salesforce metadata between two Git refs, optionally filters commits by me
 
 | Flag                          | Short | Required | Default               | Description                                                                                                                                    |
 | ----------------------------- | ----- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--from`                      | `-f`  | One of `--from` / `--from-merge-base` |         | Start ref for the diff range (e.g. `HEAD~1`, a tag, or a commit hash). Mutually exclusive with `--from-merge-base`.                            |
-| `--from-merge-base`           | `-b`  | One of `--from` / `--from-merge-base` |         | Resolve the start ref as the merge base of `--to` and this ref (e.g. `--to develop --from-merge-base main`), resolved in-process with no local git binary required. Mutually exclusive with `--from`. |
+| `--from`                      | `-f`  | Yes      |                       | Start ref for the diff range (e.g. `HEAD~1`, a tag, or a commit hash). Combine with `--merge-base` to resolve it as a merge base instead of using it directly. |
+| `--merge-base`                | `-b`  | No       | `false`               | Resolve `--from` as the merge base of `--to` and `--from` (e.g. `--to develop --from main --merge-base`), resolved in-process with no local git binary required. |
 | `--to`                        | `-t`  | No       | `HEAD`                | End ref for the diff range.                                                                                                                    |
 | `--commit-message-include`    | `-m`  | No       |                       | Include only commits whose messages match these regex patterns (repeatable, OR logic).                                                         |
 | `--commit-message-exclude`    | `-e`  | No       |                       | Exclude commits whose messages match these regex patterns (repeatable, OR logic).                                                              |
@@ -94,7 +94,7 @@ sf sgai metadata summarize --from HEAD~5 --to HEAD --output changes.md
 Resolve the start ref as the merge base of two branches (no local git binary required):
 
 ```bash
-sf sgai metadata summarize --to develop --from-merge-base main
+sf sgai metadata summarize --to develop --from main --merge-base
 ```
 
 Include only commits matching a pattern:

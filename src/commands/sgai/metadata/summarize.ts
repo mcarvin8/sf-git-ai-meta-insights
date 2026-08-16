@@ -25,8 +25,7 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       summary: messages.getMessage('flags.from.summary'),
       description: messages.getMessage('flags.from.description'),
       char: 'f',
-      required: false,
-      exactlyOne: ['from', 'from-merge-base'],
+      required: true,
     }),
     to: Flags.string({
       summary: messages.getMessage('flags.to.summary'),
@@ -129,12 +128,12 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       description: messages.getMessage('flags.max-retries.description'),
       required: false,
     }),
-    'from-merge-base': Flags.string({
-      summary: messages.getMessage('flags.from-merge-base.summary'),
-      description: messages.getMessage('flags.from-merge-base.description'),
+    'merge-base': Flags.boolean({
+      summary: messages.getMessage('flags.merge-base.summary'),
+      description: messages.getMessage('flags.merge-base.description'),
       char: 'b',
       required: false,
-      exactlyOne: ['from', 'from-merge-base'],
+      default: false,
     }),
   };
 
