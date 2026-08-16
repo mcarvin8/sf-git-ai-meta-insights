@@ -11,7 +11,7 @@ vi.mock('@mcarvin/smart-diff', async (importOriginal) => {
     getCommits: vi.fn(),
     getMergeBase: vi.fn(),
     filterCommitsByMessageRegexes: vi.fn(),
-    summarizeGitDiffWithUsage: vi.fn(),
+    summarizeGitDiff: vi.fn(),
   };
 });
 
@@ -31,7 +31,7 @@ import {
   getCommits,
   getMergeBase,
   isLlmProviderConfigured,
-  summarizeGitDiffWithUsage,
+  summarizeGitDiff,
 } from '@mcarvin/smart-diff';
 import { runMetadataSummarize, type SummarizeOptions } from '../../src/metadata/summarizeCore.js';
 import { getSalesforceMetadataIncludeFolders } from '../../src/salesforce/sfdxPackagePaths.js';
@@ -42,6 +42,7 @@ const USAGE = { requestCount: 1, inputTokens: 100, outputTokens: 50, totalTokens
 
 const MINIMAL_OPTIONS: SummarizeOptions = {
   from: 'abc123',
+  'merge-base': false,
   output: 'summary.md',
   'ignore-whitespace': false,
   'strip-diff-preamble': false,
@@ -52,6 +53,7 @@ const MINIMAL_OPTIONS: SummarizeOptions = {
 
 const FULL_OPTIONS: SummarizeOptions = {
   from: 'abc123',
+  'merge-base': false,
   to: 'def456',
   'commit-message-include': ['feat'],
   'commit-message-exclude': ['chore'],
@@ -78,7 +80,7 @@ describe('runMetadataSummarize', () => {
     vi.mocked(getSalesforceMetadataIncludeFolders).mockResolvedValue(['force-app']);
     vi.mocked(getCommits).mockResolvedValue([COMMIT]);
     vi.mocked(filterCommitsByMessageRegexes).mockReturnValue([COMMIT]);
-    vi.mocked(summarizeGitDiffWithUsage).mockResolvedValue({ summary: '## Summary', usage: USAGE });
+    vi.mocked(summarizeGitDiff).mockResolvedValue({ summary: '## Summary', usage: USAGE });
     vi.mocked(writeFile).mockResolvedValue(undefined);
   });
 
@@ -90,9 +92,10 @@ describe('runMetadataSummarize', () => {
     expect(writeFile).toHaveBeenCalledWith('summary.md', '## Summary', 'utf8');
     expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'abc123', 'HEAD');
     expect(filterCommitsByMessageRegexes).toHaveBeenCalledWith([COMMIT], undefined, undefined);
-    expect(summarizeGitDiffWithUsage).toHaveBeenCalledWith(
+    expect(summarizeGitDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'abc123',
+        mergeBase: undefined,
         to: undefined,
         excludeFolders: undefined,
         commitMessageIncludeRegexes: undefined,
@@ -114,9 +117,10 @@ describe('runMetadataSummarize', () => {
     expect(result).toEqual({ path: 'out.md', usage: USAGE });
     expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'abc123', 'def456');
     expect(filterCommitsByMessageRegexes).toHaveBeenCalledWith([COMMIT], ['feat'], ['chore']);
-    expect(summarizeGitDiffWithUsage).toHaveBeenCalledWith(
+    expect(summarizeGitDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'abc123',
+        mergeBase: undefined,
         to: 'def456',
         excludeFolders: ['unpackaged'],
         commitMessageIncludeRegexes: ['feat'],
@@ -184,12 +188,13 @@ describe('runMetadataSummarize', () => {
     expect((caught as SfError).name).toBe('NoPackageDirectories');
   });
 
-  it('resolves from via getMergeBase when from-merge-base is set', async () => {
+  it('resolves from locally via getMergeBase for commit filtering when merge-base is set, but passes raw from/mergeBase to summarizeGitDiff', async () => {
     vi.mocked(getMergeBase).mockResolvedValue('merge-base-sha');
     const log = vi.fn();
     const options: SummarizeOptions = {
+      from: 'main',
+      'merge-base': true,
       output: 'summary.md',
-      'from-merge-base': 'main',
       to: 'develop',
       'ignore-whitespace': false,
       'strip-diff-preamble': false,
@@ -203,28 +208,9 @@ describe('runMetadataSummarize', () => {
     expect(result).toEqual({ path: 'summary.md', usage: USAGE });
     expect(getMergeBase).toHaveBeenCalledWith(expect.anything(), 'develop', 'main');
     expect(getCommits).toHaveBeenCalledWith(expect.anything(), 'merge-base-sha', 'develop');
-    expect(summarizeGitDiffWithUsage).toHaveBeenCalledWith(
-      expect.objectContaining({ from: 'merge-base-sha', to: 'develop' }),
+    expect(summarizeGitDiff).toHaveBeenCalledWith(
+      expect.objectContaining({ from: 'main', mergeBase: true, to: 'develop' }),
     );
-  });
-
-  it('throws SfError when neither from nor from-merge-base is provided', async () => {
-    const options: SummarizeOptions = {
-      output: 'summary.md',
-      'ignore-whitespace': false,
-      'strip-diff-preamble': false,
-      'exclude-default-noise': false,
-      'map-reduce': false,
-      'redact-secrets': false,
-    };
-    let caught: unknown;
-    try {
-      await runMetadataSummarize(options, 'no pkg dirs', () => 'no commits', vi.fn());
-    } catch (e) {
-      caught = e;
-    }
-    expect(caught).toBeInstanceOf(SfError);
-    expect((caught as SfError).name).toBe('MissingFromRef');
   });
 
   it('calls noCommitsAfterFilterError with correct args and throws when commits filter to zero', async () => {

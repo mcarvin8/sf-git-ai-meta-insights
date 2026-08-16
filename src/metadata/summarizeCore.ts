@@ -7,7 +7,7 @@ import {
   isLlmProviderConfigured,
   LLM_GATEWAY_REQUIRED_MESSAGE,
   type LlmUsageReport,
-  summarizeGitDiffWithUsage,
+  summarizeGitDiff,
 } from '@mcarvin/smart-diff';
 import { SfError } from '@salesforce/core';
 
@@ -24,8 +24,8 @@ import {
 } from './summarizeHelpers.js';
 
 export type SummarizeOptions = {
-  from?: string;
-  'from-merge-base'?: string;
+  from: string;
+  'merge-base': boolean;
   to?: string;
   'commit-message-include'?: string[];
   'commit-message-exclude'?: string[];
@@ -65,10 +65,7 @@ export async function runMetadataSummarize(
     getValidatedCommitMessageRegexLists(options);
 
   const git = await createGitClient(process.cwd());
-  const from = options['from-merge-base'] ? await getMergeBase(git, to, options['from-merge-base']) : options.from;
-  if (!from) {
-    throw new SfError('Either --from or --from-merge-base must be provided.', 'MissingFromRef');
-  }
+  const from = options['merge-base'] ? await getMergeBase(git, to, options.from) : options.from;
 
   const { includeFolders, excludePackageDirectories } = await resolveIncludeFoldersAndExclude(git, options);
 
@@ -98,8 +95,9 @@ export async function runMetadataSummarize(
 
   const teamName = resolveMetadataSummaryTeam(options.team);
 
-  const { summary, usage } = await summarizeGitDiffWithUsage({
-    from,
+  const { summary, usage } = await summarizeGitDiff({
+    from: options.from,
+    mergeBase: options['merge-base'] || undefined,
     to: options.to,
     git,
     cwd: process.cwd(),
