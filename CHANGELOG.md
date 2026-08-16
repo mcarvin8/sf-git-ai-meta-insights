@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v4.0.0...v5.0.0) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* --from-merge-base is removed. --from is now required on every invocation; pass --merge-base alongside it to resolve --from as a merge base (e.g. --to develop --from main --merge-base instead of --to develop --from-merge-base main).
+
+### Features
+
+* bump smart-diff to v5, change --from-merge-base to --merge-base boolean ([#59](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/59)) ([3fa8158](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/3fa8158834d6a4db9e98bede2734b7f6b992713a))
+
 ## [4.0.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v3.1.1...v4.0.0) (2026-08-11)
 
 
