@@ -22,8 +22,6 @@ Salesforce CLI plugin that generates AI-written Markdown summaries of metadata c
 sf plugins install sf-git-ai-meta-insights@latest
 ```
 
-No extra `npm install` needed. All supported provider SDKs ship with the plugin.
-
 ## Quick start
 
 Set a provider credential, then run:
@@ -42,99 +40,203 @@ Output defaults to `metadata-summary.md` in the current directory.
 
 ## Command
 
-### `sf sgai metadata summarize`
+<!-- commands -->
+* [`sf sgai metadata summarize`](#sf-sgai-metadata-summarize)
 
-Diffs Salesforce metadata between two Git refs, optionally filters commits by message, and writes an AI-generated Markdown summary.
+## `sf sgai metadata summarize`
 
-#### Flags
+Generate an AI-powered summary of changed Salesforce metadata from a git diff.
 
-| Flag                          | Short | Required | Default               | Description                                                                                                                                    |
-| ----------------------------- | ----- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--from`                      | `-f`  | Yes      |                       | Start ref for the diff range (e.g. `HEAD~1`, a tag, or a commit hash). Combine with `--merge-base` to resolve it as a merge base instead of using it directly. |
-| `--merge-base`                | `-b`  | No       | `false`               | Resolve `--from` as the merge base of `--to` and `--from` (e.g. `--to develop --from main --merge-base`), resolved in-process with no local git binary required. |
-| `--to`                        | `-t`  | No       | `HEAD`                | End ref for the diff range.                                                                                                                    |
-| `--commit-message-include`    | `-m`  | No       |                       | Include only commits whose messages match these regex patterns (repeatable, OR logic).                                                         |
-| `--commit-message-exclude`    | `-e`  | No       |                       | Exclude commits whose messages match these regex patterns (repeatable, OR logic).                                                              |
-| `--include-package-directory` | `-i`  | No       |                       | Extra repo-relative package paths merged with `sfdx-project.json` directories (repeatable).                                                    |
-| `--exclude-package-directory` | `-x`  | No       |                       | Paths to remove from the configured list; also adds `:(exclude)` pathspecs to the diff (repeatable).                                           |
-| `--team`                      |       | No       |                       | Team or squad label shown in the summary. Also settable via `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM`.                                         |
-| `--output`                    | `-p`  | No       | `metadata-summary.md` | Output file path.                                                                                                                              |
-| `--model`                     |       | No       | _provider default_    | Chat model ID. Overrides the provider default (e.g. `gpt-4o-mini`, `claude-3-5-haiku-latest`). Also settable via `LLM_MODEL`.                  |
-| `--max-diff-chars`            |       | No       |                       | Max characters of unified diff text sent to the model (5,000–5,000,000).                                                                       |
-| `--context-lines`             |       | No       | `3` (git default)     | Lines of context around each change (`-U<n>`). Lower values reduce token usage on large diffs.                                                 |
-| `--ignore-whitespace`         |       | No       | `false`               | Pass `-w` to `git diff` to skip whitespace-only changes. Applied to both the unified diff and `--numstat`/`--name-status`.                     |
-| `--strip-diff-preamble`       |       | No       | `false`               | Remove low-signal `diff --git`, `index`, `mode`, `similarity`, `rename`, and `copy` lines. Hunk headers (`--- a/…`, `+++ b/…`, `@@`) are kept. |
-| `--max-hunk-lines`            |       | No       |                       | Cap each hunk body at N lines (1–100,000); excess is replaced with a single elision marker. Hunk headers and change counts stay intact.        |
-| `--exclude-default-noise`     |       | No       | `false`               | Exclude common noise paths: lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`.                                    |
-| `--map-reduce`                |       | No       | `false`               | Split an oversized diff into per-file batches and synthesize one summary, instead of hard-truncating it. Costs extra LLM calls; no-op if the diff already fits `--max-diff-chars`. |
-| `--redact-secrets`            |       | No       | `false`               | Mask likely secrets/credentials (API keys, tokens, PEM blocks, JWTs, Bearer headers, etc.) in the diff before sending it to the model.         |
-| `--max-retries`               |       | No       | `2`                   | Retry count for transient LLM call failures (rate limits, 5xx, network errors). Also settable via `LLM_MAX_RETRIES`.                           |
+```
+USAGE
+  $ sf sgai metadata summarize -f <value> [--json] [--flags-dir <value>] [-t <value>] [-m <value>...] [-e <value>...] [-i
+    <value>...] [-x <value>...] [--team <value>] [-p <value>] [--model <value>] [--max-diff-chars <value>]
+    [--context-lines <value>] [--ignore-whitespace] [--strip-diff-preamble] [--max-hunk-lines <value>]
+    [--exclude-default-noise] [--map-reduce] [--redact-secrets] [--max-retries <value>] [-b]
 
-#### Examples
+FLAGS
+  -b, --merge-base                            Resolve `--from` as the merge base of `--to` and `--from`, instead of
+                                              using it directly.
+  -e, --commit-message-exclude=<value>...     Exclude commits whose messages match any of these regular expressions
+                                              (OR).
+  -f, --from=<value>                          (required) Start reference for the git diff range.
+  -i, --include-package-directory=<value>...  Additional package directories to include in the diff.
+  -m, --commit-message-include=<value>...     Include commits whose messages match any of these regular expressions
+                                              (OR).
+  -p, --output=<value>                        [default: metadata-summary.md] Output file path for the generated summary.
+  -t, --to=<value>                            End reference for the git diff range.
+  -x, --exclude-package-directory=<value>...  Package directories to exclude from the diff.
+      --context-lines=<value>                 Number of context lines around each change in the unified diff.
+      --exclude-default-noise                 Merge smart-diff's built-in "noise" exclude list into the excluded paths.
+      --ignore-whitespace                     Ignore whitespace-only changes when building the diff.
+      --map-reduce                            Split oversized diffs into per-file batches instead of truncating.
+      --max-diff-chars=<value>                Maximum size of the unified diff sent to the LLM (characters).
+      --max-hunk-lines=<value>                Cap the body of each diff hunk; anything past the limit is elided.
+      --max-retries=<value>                   Retry count for transient LLM call failures.
+      --model=<value>                         Chat model id used for the summary.
+      --redact-secrets                        Mask likely secrets/credentials in the diff before sending it to the LLM.
+      --strip-diff-preamble                   Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy`
+                                              lines from the unified diff.
+      --team=<value>                          Optional team or squad label for the summary.
 
-Summarize changes since the previous commit:
+GLOBAL FLAGS
+  --flags-dir=<value>  Import flag values from a directory.
+  --json               Format output as json.
 
-```bash
-sf sgai metadata summarize --from HEAD~1
+DESCRIPTION
+  Generate an AI-powered summary of changed Salesforce metadata from a git diff.
+
+  Summarize metadata changes between two Git refs using any LLM provider supported by the Vercel AI SDK — OpenAI,
+  Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. A
+  configured provider (API key, base URL, and/or default headers) is required — see the README for environment
+  variables. Optionally filter commits by include/exclude message regexes, narrow paths with
+  `--include-package-directory` / `--exclude-package-directory`, and write the model output to a markdown file.
+
+EXAMPLES
+  $ sf sgai metadata summarize --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md
+
+  $ sf sgai metadata summarize --from HEAD~5 --to HEAD --commit-message-include "feat" --commit-message-exclude "wip" --exclude-package-directory force-app/main/default/lwc/temp
+
+  $ sf sgai metadata summarize --team "Revenue Cloud" --from release/cut --to HEAD
+
+  $ sf sgai metadata summarize --from abc1234 --to HEAD
+
+  $ sf sgai metadata summarize --from HEAD~5 --to HEAD --ignore-whitespace --context-lines 1 --strip-diff-preamble --max-hunk-lines 400
+
+  $ sf sgai metadata summarize --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
+
+  $ sf sgai metadata summarize --from HEAD~1 --redact-secrets
+
+  $ sf sgai metadata summarize --to develop --from main --merge-base
+
+FLAG DESCRIPTIONS
+  -b, --merge-base  Resolve `--from` as the merge base of `--to` and `--from`, instead of using it directly.
+
+    When set, the start of the diff range is resolved as the merge base of `--to` and `--from`, e.g. `--to develop
+    --from main --merge-base` is equivalent to `--from $(git merge-base develop main) --to develop`, resolved in-process
+    with no local git binary required. Defaults to false, in which case `--from` is used as-is.
+
+  -e, --commit-message-exclude=<value>...
+
+    Exclude commits whose messages match any of these regular expressions (OR).
+
+    If a commit message matches any exclude pattern, that commit is dropped before the diff is built. Can be set
+    multiple times. Applied after include matching when both are set. Use `-e` / `--commit-message-exclude` once per
+    pattern.
+
+  -f, --from=<value>  Start reference for the git diff range.
+
+    A git commit hash or ref for the beginning of the diff range (for example a merge base, tag, or explicit commit).
+    Always required. Combine with `--merge-base` to resolve this ref as a merge base instead of using it directly.
+
+  -i, --include-package-directory=<value>...  Additional package directories to include in the diff.
+
+    Repo-relative paths (forward slashes), merged with package directories read from `sfdx-project.json` after
+    `--exclude-package-directory` is applied. Use to add directories that are not listed in `sfdx-project.json`, or to
+    supply the only include paths when the project file is missing or empty (pass at least one value). Use `-i` /
+    `--include-package-directory` once per path.
+
+  -m, --commit-message-include=<value>...
+
+    Include commits whose messages match any of these regular expressions (OR).
+
+    Each pattern is matched case-insensitively against the full commit message. If any pattern matches, the commit is
+    included (unless excluded by `--commit-message-exclude`). Use `-m` / `--commit-message-include` once per pattern;
+    the flag may be repeated.
+
+  -p, --output=<value>  Output file path for the generated summary.
+
+    The path to the markdown file where the AI summary is written. Defaults to metadata-summary.md.
+
+  -t, --to=<value>  End reference for the git diff range.
+
+    A git commit hash or ref to use as the end of the diff range. Defaults to HEAD.
+
+  -x, --exclude-package-directory=<value>...  Package directories to exclude from the diff.
+
+    Repo-relative paths (forward slashes). Each value removes matching entries from the `sfdx-project.json` package list
+    (same as the former `--ignore-package-directory` behavior) and is also passed to the underlying git diff as an
+    excluded pathspec (`:(exclude)path`), so you can drop whole packages or narrow out subtrees (for example generated
+    folders under a package). Repeatable; `-x` is a short form.
+
+  --context-lines=<value>  Number of context lines around each change in the unified diff.
+
+    Sets `git diff -U<n>` when building the unified diff sent to the model. Lower values (1 or 0) are typically the
+    single biggest token saver on modification-heavy diffs because they drop unchanged surrounding lines from each hunk.
+    The structured diff summary (file counts and line totals) still reflects the full change. Allowed range is 0 through
+    1000 when set. When omitted, git's default (3) is used.
+
+  --exclude-default-noise  Merge smart-diff's built-in "noise" exclude list into the excluded paths.
+
+    When set, the plugin merges smart-diff's `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`,
+    `coverage`, `node_modules`, `__snapshots__`) into the set of excluded pathspecs passed to git. This is additive with
+    any `--exclude-package-directory` values you provide. Defaults to false, because Salesforce DX repos rarely contain
+    these folders inside package directories; enable it if your repo does.
+
+  --ignore-whitespace  Ignore whitespace-only changes when building the diff.
+
+    Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens in the unified diff.
+    This is also applied to the `--numstat` and `--name-status` calls used for the structured summary so file counts and
+    line totals stay consistent with the diff text. Useful for Salesforce metadata XML where formatting churn is common.
+    Defaults to false.
+
+  --map-reduce  Split oversized diffs into per-file batches instead of truncating.
+
+    By default, a diff over `--max-diff-chars` is hard-truncated and a notice is prepended to the summary. When set, an
+    oversized diff is instead split into per-file batches, each summarized independently, then synthesized into one
+    final summary. This costs one extra LLM call per batch plus a reduce call, so it is slower and more expensive than a
+    single request — use it when preserving coverage of the full diff matters more than latency or cost. No-op when the
+    diff already fits within `--max-diff-chars`. Defaults to false.
+
+  --max-diff-chars=<value>  Maximum size of the unified diff sent to the LLM (characters).
+
+    Large metadata diffs can exceed the model context window. The plugin sends at most this many characters of the
+    unified diff (plus a fixed preamble). Allowed range is 5000 through 5000000 when set. Defaults to a conservative
+    limit when unset; override with `LLM_MAX_DIFF_CHARS` or this flag. Only increase if your model and gateway support a
+    larger context.
+
+  --max-hunk-lines=<value>  Cap the body of each diff hunk; anything past the limit is elided.
+
+    Limits the number of body lines retained per `@@` hunk in the unified diff. Lines past the limit are replaced with a
+    single elision marker so the `@@` header and the structured diff summary totals are preserved. Use this to prevent a
+    single massive hunk (for example a regenerated metadata file) from dominating the LLM prompt. Allowed range is 1
+    through 100000 when set. When omitted, hunks are not truncated.
+
+  --max-retries=<value>  Retry count for transient LLM call failures.
+
+    Number of retries for transient LLM call failures such as rate limits, 5xx responses, and network errors. Must be a
+    non-negative integer. When omitted, uses `LLM_MAX_RETRIES` if set, otherwise the provider default (2).
+
+  --model=<value>  Chat model id used for the summary.
+
+    Override the chat model used when creating the AI-generated metadata summary. Must be a model id supported by the
+    resolved LLM provider (for example `gpt-4o` for OpenAI, `claude-3-5-sonnet-latest` for Anthropic, `gemini-2.0-flash`
+    for Google). When omitted, the plugin uses `LLM_MODEL` if set, otherwise the resolved provider's default model.
+
+  --redact-secrets  Mask likely secrets/credentials in the diff before sending it to the LLM.
+
+    Masks values that look like cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers,
+    basic-auth URL passwords, and generic `KEY=value` assignments before the diff text is sent to the model. Useful for
+    Salesforce metadata that can carry secrets in Custom Settings, Named Credentials, or scratch org config. Defaults to
+    false.
+
+  --strip-diff-preamble
+
+    Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the unified diff.
+
+    When set, removes the per-file git diff preamble lines that contain almost no semantic information (`diff --git`,
+    `index`, `new file mode`, `deleted file mode`, `old mode`, `new mode`, `similarity index`, `dissimilarity index`,
+    `rename from`/`rename to`, `copy from`/`copy to`). The `--- a/…`, `+++ b/…`, and `@@` hunk headers are preserved so
+    the model can still attribute changes to files. Defaults to false.
+
+  --team=<value>  Optional team or squad label for the summary.
+
+    When set, includes a team line in the LLM user prompt. If omitted, `METADATA_AUDIT_TEAM` or `SF_GIT_AI_TEAM` is used
+    when set; otherwise no team is included.
 ```
 
-Summarize changes from the past week on `main`:
-
-```bash
-FROM=$(git log origin/main -1 --before="1 week ago" --pretty=format:%H)
-sf sgai metadata summarize --from "$FROM" --to origin/main
-```
-
-Save output to a custom file:
-
-```bash
-sf sgai metadata summarize --from HEAD~5 --to HEAD --output changes.md
-```
-
-Resolve the start ref as the merge base of two branches (no local git binary required):
-
-```bash
-sf sgai metadata summarize --to develop --from main --merge-base
-```
-
-Include only commits matching a pattern:
-
-```bash
-sf sgai metadata summarize --from main --to HEAD --commit-message-include "(feature|fix)"
-```
-
-Override the model:
-
-```bash
-sf sgai metadata summarize --from HEAD~1 --model claude-3-5-sonnet-latest
-```
-
-Mask likely secrets before the diff leaves your machine:
-
-```bash
-sf sgai metadata summarize --from HEAD~1 --redact-secrets
-```
-
-Reduce LLM token cost by shaping the diff:
-
-```bash
-sf sgai metadata summarize \
-  --from HEAD~5 --to HEAD \
-  --ignore-whitespace \
-  --context-lines 1 \
-  --strip-diff-preamble \
-  --max-hunk-lines 400
-```
-
-> The diff-shaping flags only affect the text sent to the model. The structured change inventory (file counts, additions, deletions) is computed separately and is always accurate. See the [`@mcarvin/smart-diff` "Reducing tokens" guide](https://github.com/mcarvin8/smart-diff#reducing-tokens) for details.
-
-Preserve full coverage of a diff that exceeds `--max-diff-chars` instead of truncating it:
-
-```bash
-sf sgai metadata summarize --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
-```
-
-This summarizes each changed file in its own batch, then synthesizes one final summary — slower and more expensive than a single request, but nothing past the character limit is dropped.
+_See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.0.0/src/commands/sgai/metadata/summarize.ts)_
+<!-- commandsstop -->
 
 ## Provider configuration
 
