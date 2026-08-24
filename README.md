@@ -116,9 +116,7 @@ FLAG DESCRIPTIONS
     --from main --merge-base` is equivalent to `--from $(git merge-base develop main) --to develop`, resolved in-process
     with no local git binary required. Defaults to false, in which case `--from` is used as-is.
 
-  -e, --commit-message-exclude=<value>...
-
-    Exclude commits whose messages match any of these regular expressions (OR).
+  -e, --commit-message-exclude=<value>...  Exclude commits whose messages match any of these regular expressions (OR).
 
     If a commit message matches any exclude pattern, that commit is dropped before the diff is built. Can be set
     multiple times. Applied after include matching when both are set. Use `-e` / `--commit-message-exclude` once per
@@ -136,9 +134,7 @@ FLAG DESCRIPTIONS
     supply the only include paths when the project file is missing or empty (pass at least one value). Use `-i` /
     `--include-package-directory` once per path.
 
-  -m, --commit-message-include=<value>...
-
-    Include commits whose messages match any of these regular expressions (OR).
+  -m, --commit-message-include=<value>...  Include commits whose messages match any of these regular expressions (OR).
 
     Each pattern is matched case-insensitively against the full commit message. If any pattern matches, the commit is
     included (unless excluded by `--commit-message-exclude`). Use `-m` / `--commit-message-include` once per pattern;
