@@ -86,11 +86,11 @@ GLOBAL FLAGS
 DESCRIPTION
   Generate an AI-powered summary of changed Salesforce metadata from a git diff.
 
-  Summarize metadata changes between two Git refs using any LLM provider supported by the Vercel AI SDK — OpenAI,
-  Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. A
-  configured provider (API key, base URL, and/or default headers) is required — see the README for environment
-  variables. Optionally filter commits by include/exclude message regexes, narrow paths with
-  `--include-package-directory` / `--exclude-package-directory`, and write the model output to a markdown file.
+  Summarize metadata changes between two Git refs using any of the supported LLM providers — OpenAI, Anthropic, Google
+  Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. A configured provider
+  (API key, base URL, and/or default headers) is required — see the README for environment variables. Optionally filter
+  commits by include/exclude message regexes, narrow paths with `--include-package-directory` /
+  `--exclude-package-directory`, and write the model output to a markdown file.
 
 EXAMPLES
   $ sf sgai metadata summarize --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md

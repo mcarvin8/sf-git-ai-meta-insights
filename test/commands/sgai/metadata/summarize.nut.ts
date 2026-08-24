@@ -1,11 +1,11 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
 import { isLlmProviderConfigured } from '@mcarvin/smart-diff';
-import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { execCmd, TestSession } from '@salesforce/cli-plugins-testkit';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-/** Same gate as `sgai metadata summarize`: needs a configured Vercel AI SDK provider (API key, base URL, or LLM default headers). */
+/** Same gate as `sgai metadata summarize`: needs a configured AI provider (API key, base URL, or LLM default headers). */
 const canCallLlm = isLlmProviderConfigured();
 
 (canCallLlm ? describe : describe.skip)('sgai metadata summarize NUT', () => {
