@@ -231,7 +231,7 @@ FLAG DESCRIPTIONS
     when set; otherwise no team is included.
 ```
 
-_See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.0.0/src/commands/sgai/metadata/summarize.ts)_
+_See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.1.0/src/commands/sgai/metadata/summarize.ts)_
 <!-- commandsstop -->
 
 ## Provider configuration
