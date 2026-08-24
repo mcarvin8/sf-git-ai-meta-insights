@@ -3,7 +3,7 @@
   "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
   "version": "5.0.0",
   "dependencies": {
-    "@mcarvin/smart-diff": "5.0.0",
+    "@mcarvin/smart-diff": "6.0.0",
     "@oclif/core": "4.13.3",
     "@salesforce/core": "9.1.0",
     "@salesforce/sf-plugins-core": "13.0.0"
@@ -59,7 +59,6 @@
     "anthropic",
     "gemini",
     "bedrock",
-    "vercel-ai",
     "sfdx-project",
     "cicd",
     "devops",
@@ -265,5 +264,8 @@
   },
   "bugs": {
     "url": "https://github.com/mcarvin8/sf-git-ai-meta-insights/issues"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

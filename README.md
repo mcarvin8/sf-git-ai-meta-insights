@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights/graph/badge.svg?token=N5FKE0JPHN)](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsf-git-ai-meta-insights%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/sf-git-ai-meta-insights/main)
 
-Salesforce CLI plugin that generates AI-written Markdown summaries of metadata changes between two Git refs. Supports every LLM provider in the [Vercel AI SDK](https://sdk.vercel.ai): OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway.
+Salesforce CLI plugin that generates AI-written Markdown summaries of metadata changes between two Git refs. Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway.
 
 ## Requirements
 
@@ -138,7 +138,7 @@ This summarizes each changed file in its own batch, then synthesizes one final s
 
 ## Provider configuration
 
-Provider resolution is handled by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff) via the Vercel AI SDK. Set credentials for whichever provider you want to use. If multiple providers are configured, set `LLM_PROVIDER` to pick one explicitly; otherwise the resolver auto-detects from env vars.
+Provider resolution is handled by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff). Set credentials for whichever provider you want to use. If multiple providers are configured, set `LLM_PROVIDER` to pick one explicitly; otherwise the resolver auto-detects from env vars.
 
 | Provider (`LLM_PROVIDER`) | Credential env vars                                                               | Default model                              |
 | ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -240,7 +240,7 @@ Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://doc
 
 ## How it works
 
-The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into Markdown summaries using any Vercel AI SDK provider.
+The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into AI generated markdown summaries.
 
 After writing the summary file, the command logs LLM usage (request count, input/output/cached/total tokens) to help track model spend.
 
