@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.1.0...v5.2.0) (2026-08-26)
+
+
+### Features
+
+* **smart-diff:** bump @mcarvin/smart-diff to 6.2.0 ([#63](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/63)) ([ab19d9a](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/ab19d9a534c3232082ab9d6f9704d7d2dd781c0c))
+
 ## [5.1.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.0.0...v5.1.0) (2026-08-24)
 
 
