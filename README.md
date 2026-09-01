@@ -8,7 +8,23 @@
 
 Generates AI-written Markdown summaries of Salesforce metadata changes between two Git refs. Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway. Available as a **Salesforce CLI plugin** and as a **native GitHub Action** for GitHub Actions users who want to skip installing the CLI.
 
-## Requirements
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+
+  - [Salesforce CLI](#salesforce-cli)
+  - [GitHub Action](#github-action)
+  - [Provider configuration](#provider-configuration)
+  - [Use cases](#use-cases)
+  - [How it works](#how-it-works)
+  - [License](#license)
+</details>
+
+---
+
+## Salesforce CLI
+
+### Requirements
 
 - Salesforce CLI (`sf`)
 - Node.js 22.22.1 or later
@@ -16,17 +32,12 @@ Generates AI-written Markdown summaries of Salesforce metadata changes between t
 - An LLM provider — see [Provider configuration](#provider-configuration)
 - No local Git binary required - the git repository is read directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies
 
-## Installation
+### Quick start
 
 ```bash
+# Install
 sf plugins install sf-git-ai-meta-insights@latest
-```
 
-## Quick start
-
-Set a provider credential, then run:
-
-```bash
 # OpenAI
 export OPENAI_API_KEY="sk-..."
 sf sgai metadata summarize --from HEAD~1
@@ -38,78 +49,7 @@ sf sgai metadata summarize --from HEAD~1 --model claude-3-5-sonnet-latest
 
 Output defaults to `metadata-summary.md` in the current directory.
 
-## GitHub Action
-
-For GitHub Actions, this is also available as a native Action - no `sf` CLI or plugin install required:
-
-```yaml
-- name: Summarize metadata changes
-  uses: mcarvin8/sf-git-ai-meta-insights@v5
-  with:
-    from: HEAD~1
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-```
-
-### Inputs
-
-| Input                        | Description                                                                                | Required | Default               |
-| ----------------------------- | --------------------------------------------------------------------------------------------- | -------- | ---------------------- |
-| `from`                        | Start reference for the git diff range.                                                       | Yes      |                         |
-| `to`                           | End reference for the git diff range.                                                         | No       | `HEAD`                  |
-| `merge-base`                   | Resolve `from` as the merge base of `to` and `from`, instead of using it directly.             | No       | `false`                 |
-| `commit-message-include`        | Regular expressions to include commits by message (OR), one per line.                         | No       |                         |
-| `commit-message-exclude`        | Regular expressions to exclude commits by message (OR), one per line.                         | No       |                         |
-| `include-package-directory`      | Additional package directories to include in the diff, one per line.                          | No       |                         |
-| `exclude-package-directory`      | Package directories to exclude from the diff, one per line.                                   | No       |                         |
-| `team`                         | Optional team or squad label for the summary.                                                 | No       |                         |
-| `output`                       | Output file path for the generated summary.                                                   | No       | `metadata-summary.md`   |
-| `model`                        | Chat model id used for the summary.                                                            | No       |                         |
-| `max-diff-chars`                | Maximum size of the unified diff sent to the LLM (characters).                                | No       |                         |
-| `context-lines`                 | Number of context lines around each change in the unified diff.                               | No       |                         |
-| `ignore-whitespace`             | Ignore whitespace-only changes when building the diff.                                        | No       | `false`                 |
-| `strip-diff-preamble`           | Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the diff.  | No       | `false`                 |
-| `max-hunk-lines`                | Cap the body of each diff hunk; anything past the limit is elided.                            | No       |                         |
-| `exclude-default-noise`         | Merge smart-diff's built-in noise exclude list into the excluded paths.                       | No       | `false`                 |
-| `map-reduce`                   | Split oversized diffs into per-file batches instead of truncating.                             | No       | `false`                 |
-| `redact-secrets`                | Mask likely secrets/credentials in the diff before sending it to the LLM.                     | No       | `false`                 |
-| `max-retries`                   | Retry count for transient LLM call failures.                                                  | No       |                         |
-
-Set your LLM provider credential (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) as a step-level `env` var — see [Provider configuration](#provider-configuration).
-
-Unlike the CLI, the Action does not require an `sf` CLI install; if your repo has no `sfdx-project.json`, supply `include-package-directory` explicitly.
-
-### Outputs
-
-| Output                | Description                                             |
-| ----------------------- | ----------------------------------------------------------- |
-| `summary-path`          | Path to the generated Markdown summary file.               |
-| `request-count`         | Number of LLM requests made while generating the summary.   |
-| `input-tokens`          | LLM input tokens consumed.                                  |
-| `output-tokens`         | LLM output tokens consumed.                                 |
-| `cached-input-tokens`    | LLM cached input tokens consumed.                            |
-| `total-tokens`          | Total LLM tokens consumed.                                   |
-
-### Example: deploy-summary comment on a PR
-
-```yaml
-- name: Summarize metadata changes
-  id: summarize
-  uses: mcarvin8/sf-git-ai-meta-insights@v5
-  with:
-    from: ${{ github.event.pull_request.base.sha }}
-    include-package-directory: force-app
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-
-- name: Post summary to PR
-  run: gh pr comment "$PR_NUMBER" --body-file "${{ steps.summarize.outputs.summary-path }}"
-  env:
-    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    PR_NUMBER: ${{ github.event.pull_request.number }}
-```
-
-## Command
+### CLI Command Reference
 
 <!-- commands -->
 * [`sf sgai metadata summarize`](#sf-sgai-metadata-summarize)
@@ -305,6 +245,79 @@ FLAG DESCRIPTIONS
 _See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.2.0/src/commands/sgai/metadata/summarize.ts)_
 <!-- commandsstop -->
 
+## GitHub Action
+
+### Requirements
+
+- No Salesforce CLI or plugin install required - the Action bundles the same core logic as a standalone `node24` Action
+- A Salesforce DX project with `sfdx-project.json` in the checked-out repo (or supply `include-package-directory`)
+- An LLM provider credential set as a step-level `env` var — see [Provider configuration](#provider-configuration)
+
+### Usage
+
+```yaml
+- name: Summarize metadata changes
+  uses: mcarvin8/sf-git-ai-meta-insights@v5
+  with:
+    from: HEAD~1
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+### Inputs
+
+| Input                        | Description                                                                                | Required | Default               |
+| ----------------------------- | --------------------------------------------------------------------------------------------- | -------- | ---------------------- |
+| `from`                        | Start reference for the git diff range.                                                       | Yes      |                         |
+| `to`                           | End reference for the git diff range.                                                         | No       | `HEAD`                  |
+| `merge-base`                   | Resolve `from` as the merge base of `to` and `from`, instead of using it directly.             | No       | `false`                 |
+| `commit-message-include`        | Regular expressions to include commits by message (OR), one per line.                         | No       |                         |
+| `commit-message-exclude`        | Regular expressions to exclude commits by message (OR), one per line.                         | No       |                         |
+| `include-package-directory`      | Additional package directories to include in the diff, one per line.                          | No       |                         |
+| `exclude-package-directory`      | Package directories to exclude from the diff, one per line.                                   | No       |                         |
+| `team`                         | Optional team or squad label for the summary.                                                 | No       |                         |
+| `output`                       | Output file path for the generated summary.                                                   | No       | `metadata-summary.md`   |
+| `model`                        | Chat model id used for the summary.                                                            | No       |                         |
+| `max-diff-chars`                | Maximum size of the unified diff sent to the LLM (characters).                                | No       |                         |
+| `context-lines`                 | Number of context lines around each change in the unified diff.                               | No       |                         |
+| `ignore-whitespace`             | Ignore whitespace-only changes when building the diff.                                        | No       | `false`                 |
+| `strip-diff-preamble`           | Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the diff.  | No       | `false`                 |
+| `max-hunk-lines`                | Cap the body of each diff hunk; anything past the limit is elided.                            | No       |                         |
+| `exclude-default-noise`         | Merge smart-diff's built-in noise exclude list into the excluded paths.                       | No       | `false`                 |
+| `map-reduce`                   | Split oversized diffs into per-file batches instead of truncating.                             | No       | `false`                 |
+| `redact-secrets`                | Mask likely secrets/credentials in the diff before sending it to the LLM.                     | No       | `false`                 |
+| `max-retries`                   | Retry count for transient LLM call failures.                                                  | No       |                         |
+
+### Outputs
+
+| Output                | Description                                             |
+| ----------------------- | ----------------------------------------------------------- |
+| `summary-path`          | Path to the generated Markdown summary file.               |
+| `request-count`         | Number of LLM requests made while generating the summary.   |
+| `input-tokens`          | LLM input tokens consumed.                                  |
+| `output-tokens`         | LLM output tokens consumed.                                 |
+| `cached-input-tokens`    | LLM cached input tokens consumed.                            |
+| `total-tokens`          | Total LLM tokens consumed.                                   |
+
+### Example: deploy-summary comment on a PR
+
+```yaml
+- name: Summarize metadata changes
+  id: summarize
+  uses: mcarvin8/sf-git-ai-meta-insights@v5
+  with:
+    from: ${{ github.event.pull_request.base.sha }}
+    include-package-directory: force-app
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+- name: Post summary to PR
+  run: gh pr comment "$PR_NUMBER" --body-file "${{ steps.summarize.outputs.summary-path }}"
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    PR_NUMBER: ${{ github.event.pull_request.number }}
+```
+
 ## Provider configuration
 
 Provider resolution is handled by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff). Set credentials for whichever provider you want to use. If multiple providers are configured, set `LLM_PROVIDER` to pick one explicitly; otherwise the resolver auto-detects from env vars.
@@ -382,11 +395,17 @@ Add `--team "Platform Team"` to label the summary, or `--commit-message-include 
 
 Before merging and deploying a PR or MR, generate an AI summary of the Salesforce metadata it introduces. Useful for code review, impact analysis, or pre-deployment sign-off.
 
-**GitHub PR** — run in CI and post the summary as a sticky PR comment using [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment):
+**GitHub PR** — use the [GitHub Action](#github-action) and post the summary as a sticky PR comment using [`marocchino/sticky-pull-request-comment`](https://github.com/marocchino/sticky-pull-request-comment):
 
 ```yaml
 - name: Summarize metadata changes
-  run: sf sgai metadata summarize --from origin/main --to ${{ github.sha }} --output pr-impact.md
+  uses: mcarvin8/sf-git-ai-meta-insights@v5
+  with:
+    from: origin/main
+    to: ${{ github.sha }}
+    output: pr-impact.md
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
 - name: Post metadata summary as PR comment
   if: always() && github.event_name == 'pull_request'
@@ -398,7 +417,7 @@ Before merging and deploying a PR or MR, generate an AI summary of the Salesforc
 
 The comment is created on first run and updated (not duplicated) on subsequent pushes to the same PR.
 
-**GitLab MR** — same approach, using your MR's source branch:
+**GitLab MR** — no native Action support on GitLab, so use the CLI directly with your MR's source branch:
 
 ```bash
 git fetch origin
