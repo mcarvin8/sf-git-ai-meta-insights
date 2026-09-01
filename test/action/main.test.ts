@@ -132,25 +132,74 @@ describe('GitHub Action entrypoint', () => {
     expect(core.setOutput).toHaveBeenCalledWith('cached-input-tokens', 0);
     expect(core.setOutput).toHaveBeenCalledWith('total-tokens', 150);
     expect(core.setFailed).not.toHaveBeenCalled();
+    expect(core.info).toHaveBeenCalledWith(
+      'LLM usage: 1 request(s), 100 input tokens, 50 output tokens, 0 cached input tokens, 150 total tokens.',
+    );
+  });
+
+  it('requests "from" as a required input, and queries every other input by its exact name', async () => {
+    stubInputs({ from: 'HEAD~1' });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+
+    await run();
+
+    expect(getInputMock).toHaveBeenCalledWith('from', { required: true });
+    expect(getInputMock).toHaveBeenCalledWith('to');
+    expect(getInputMock).toHaveBeenCalledWith('team');
+    expect(getInputMock).toHaveBeenCalledWith('output');
+    expect(getInputMock).toHaveBeenCalledWith('model');
+    expect(getInputMock).toHaveBeenCalledWith('max-diff-chars');
+    expect(getInputMock).toHaveBeenCalledWith('context-lines');
+    expect(getInputMock).toHaveBeenCalledWith('max-hunk-lines');
+    expect(getInputMock).toHaveBeenCalledWith('max-retries');
+    expect(getMultilineInputMock).toHaveBeenCalledWith('commit-message-include');
+    expect(getMultilineInputMock).toHaveBeenCalledWith('commit-message-exclude');
+    expect(getMultilineInputMock).toHaveBeenCalledWith('include-package-directory');
+    expect(getMultilineInputMock).toHaveBeenCalledWith('exclude-package-directory');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('merge-base');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('ignore-whitespace');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('strip-diff-preamble');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('exclude-default-noise');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('map-reduce');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('redact-secrets');
+  });
+
+  it('passes the literal no-package-directories error message through to runMetadataSummarize', async () => {
+    stubInputs({ from: 'HEAD~1' });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+
+    await run();
+
+    expect(runMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'No Salesforce package directories were found in `sfdx-project.json` for this repository ' +
+        '(or every package directory was excluded). Configure package directories or use the ' +
+        '`include-package-directory` input.',
+      expect.any(Function),
+      expect.any(Function),
+    );
   });
 
   it('builds the no-commits-after-filter error message from the resolved args', async () => {
     stubInputs({ from: 'HEAD~1' });
+    let capturedMessage: string | undefined;
     runMock.mockImplementation(
       async (
         _options: unknown,
         _noPackageDirectoriesError: string,
         noCommitsAfterFilterError: (from: string, to: string, include: string, exclude: string) => string,
       ) => {
-        const message = noCommitsAfterFilterError('HEAD~1', 'HEAD', '[]', '[]');
-        expect(message).toBe(
-          'No commits remained after applying commit message filters between HEAD~1 and HEAD. Include: []; exclude: [].',
-        );
+        capturedMessage = noCommitsAfterFilterError('HEAD~1', 'HEAD', '[]', '[]');
         return { path: 'metadata-summary.md', usage: baseUsage };
       },
     );
 
     await run();
+
+    expect(capturedMessage).toBe(
+      'No commits remained after applying commit message filters between HEAD~1 and HEAD. Include: []; exclude: [].',
+    );
+    expect(core.setFailed).not.toHaveBeenCalled();
   });
 
   it('forwards the log callback to core.info', async () => {
