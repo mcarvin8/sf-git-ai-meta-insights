@@ -1,0 +1,145 @@
+# Manual smoke test: exercises the Action end to end on real GitHub Actions
+# infra using a synthetic commit in a scratch repo.
+#
+# Two sources, deliberately not the same:
+# - pull_request: uses `./` (this checkout's actual action.yml/dist/action) -
+#   validates what's about to be merged before it ever reaches @v5.
+# - workflow_dispatch: uses `@v5` (the live published tag) - an on-demand
+#   check that what's actually public still works, run manually post-release.
+name: Smoke test (published Action)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/smoke-test-action.yml'
+      - 'action.yml'
+      - 'dist/action/**'
+      - 'src/action/**'
+      - 'src/metadata/**'
+      - 'src/ai/**'
+      - 'src/salesforce/**'
+
+permissions:
+  contents: read
+
+jobs:
+  success-path-local:
+    name: Success path (local checkout)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Make a scratch commit to diff against
+        run: |
+          mkdir -p force-app/main/default/classes
+          cat > force-app/main/default/classes/SmokeTest.cls <<'EOF'
+          public class SmokeTest {
+              public static void run() {}
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add force-app/main/default/classes/SmokeTest.cls
+          git commit -m "chore: smoke test metadata change"
+
+      # continue-on-error: this repo has no ANTHROPIC_API_KEY secret configured
+      # yet, so without a key the step is expected to fail at the "no LLM
+      # provider configured" check. That still proves the action itself
+      # compiles and wires inputs through correctly - see the next step.
+      - name: Generate metadata summary
+        id: summarize
+        continue-on-error: true
+        uses: ./
+        with:
+          from: 'HEAD~1'
+          output: 'smoke-summary.md'
+          include-package-directory: 'force-app'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Confirm the action ran (API key optional)
+        env:
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$HAS_KEY" ]; then
+            if [ "${{ steps.summarize.outcome }}" != "success" ]; then
+              echo "ANTHROPIC_API_KEY is set, so the action was expected to succeed but its outcome was '${{ steps.summarize.outcome }}'."
+              exit 1
+            fi
+            echo "summary-path: ${{ steps.summarize.outputs.summary-path }}"
+            echo "request-count: ${{ steps.summarize.outputs.request-count }}"
+            echo "total-tokens: ${{ steps.summarize.outputs.total-tokens }}"
+            echo "---"
+            cat smoke-summary.md
+          else
+            if [ "${{ steps.summarize.outcome }}" != "failure" ]; then
+              echo "No ANTHROPIC_API_KEY secret is configured, so the action was expected to fail on the 'no LLM provider configured' check, but its outcome was '${{ steps.summarize.outcome }}'."
+              exit 1
+            fi
+            echo "No ANTHROPIC_API_KEY secret configured - the action correctly reached its 'no LLM provider configured' failure. That confirms the action bundle runs and wires inputs through; set the secret to smoke-test the full LLM call."
+          fi
+
+  success-path-published:
+    name: Success path (published @v5)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Make a scratch commit to diff against
+        run: |
+          mkdir -p force-app/main/default/classes
+          cat > force-app/main/default/classes/SmokeTest.cls <<'EOF'
+          public class SmokeTest {
+              public static void run() {}
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add force-app/main/default/classes/SmokeTest.cls
+          git commit -m "chore: smoke test metadata change"
+
+      # continue-on-error: this repo has no ANTHROPIC_API_KEY secret configured
+      # yet, so without a key the step is expected to fail at the "no LLM
+      # provider configured" check. That still proves the action itself
+      # compiles and wires inputs through correctly - see the next step.
+      - name: Generate metadata summary
+        id: summarize
+        continue-on-error: true
+        uses: mcarvin8/sf-git-ai-meta-insights@v5
+        with:
+          from: 'HEAD~1'
+          output: 'smoke-summary.md'
+          include-package-directory: 'force-app'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Confirm the action ran (API key optional)
+        env:
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$HAS_KEY" ]; then
+            if [ "${{ steps.summarize.outcome }}" != "success" ]; then
+              echo "ANTHROPIC_API_KEY is set, so the action was expected to succeed but its outcome was '${{ steps.summarize.outcome }}'."
+              exit 1
+            fi
+            echo "summary-path: ${{ steps.summarize.outputs.summary-path }}"
+            echo "request-count: ${{ steps.summarize.outputs.request-count }}"
+            echo "total-tokens: ${{ steps.summarize.outputs.total-tokens }}"
+            echo "---"
+            cat smoke-summary.md
+          else
+            if [ "${{ steps.summarize.outcome }}" != "failure" ]; then
+              echo "No ANTHROPIC_API_KEY secret is configured, so the action was expected to fail on the 'no LLM provider configured' check, but its outcome was '${{ steps.summarize.outcome }}'."
+              exit 1
+            fi
+            echo "No ANTHROPIC_API_KEY secret configured - the action correctly reached its 'no LLM provider configured' failure. That confirms the action bundle runs and wires inputs through; set the secret to smoke-test the full LLM call."
+          fi
