@@ -242,7 +242,7 @@ FLAG DESCRIPTIONS
     when set; otherwise no team is included.
 ```
 
-_See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.2.0/src/commands/sgai/metadata/summarize.ts)_
+_See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8/sf-git-ai-meta-insights/blob/v5.3.0/src/commands/sgai/metadata/summarize.ts)_
 <!-- commandsstop -->
 
 ## GitHub Action
