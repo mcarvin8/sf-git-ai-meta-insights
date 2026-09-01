@@ -9,6 +9,7 @@
     "@salesforce/sf-plugins-core": "13.0.0"
   },
   "devDependencies": {
+    "@actions/core": "3.0.1",
     "@biomejs/biome": "2.5.1",
     "@commitlint/cli": "21.2.1",
     "@commitlint/config-conventional": "21.2.0",
@@ -18,6 +19,7 @@
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "26.1.2",
     "@vitest/coverage-v8": "4.1.5",
+    "esbuild": "0.28.2",
     "husky": "9.1.7",
     "knip": "6.31.0",
     "lint-staged": "17.3.0",
@@ -34,6 +36,7 @@
   },
   "files": [
     "/lib",
+    "!/lib/action",
     "/messages",
     "/oclif.manifest.json",
     "/oclif.lock",
@@ -87,6 +90,7 @@
   },
   "scripts": {
     "build": "wireit",
+    "build:action": "wireit",
     "clean": "wireit",
     "clean:build": "wireit",
     "clean:package-manager": "wireit",
@@ -112,8 +116,23 @@
     "build": {
       "dependencies": [
         "compile",
-        "lint"
+        "lint",
+        "build:action"
       ]
+    },
+    "build:action": {
+      "command": "esbuild src/action/index.ts --bundle --minify --platform=node --format=cjs --target=node22 --outfile=dist/action/index.cjs",
+      "files": [
+        "src/action/**/*.ts",
+        "src/metadata/**/*.ts",
+        "src/ai/**/*.ts",
+        "src/salesforce/**/*.ts",
+        "tsconfig.json"
+      ],
+      "output": [
+        "dist/action/**"
+      ],
+      "clean": false
     },
     "clean": {
       "command": "shx rm -rf 'reports/*' oclif.manifest.json oclif.lock package.tgz 'stderr*.txt' 'stdout*.txt' '.stryker-tmp/*'",
@@ -321,6 +340,6 @@
     "url": "https://github.com/mcarvin8/sf-git-ai-meta-insights/issues"
   },
   "allowScripts": {
-    "esbuild@0.28.1": true
+    "esbuild@0.28.2": true
   }
 }

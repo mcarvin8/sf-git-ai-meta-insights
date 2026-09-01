@@ -1,0 +1,92 @@
+name: 'Salesforce Metadata AI Insights'
+description: >-
+  Generate an AI-written Markdown summary of Salesforce metadata changes
+  between two Git refs.
+author: 'Matt Carvin'
+branding:
+  icon: 'cloud'
+  color: 'blue'
+
+inputs:
+  from:
+    description: 'Start reference for the git diff range.'
+    required: true
+  to:
+    description: 'End reference for the git diff range.'
+    required: false
+  merge-base:
+    description: 'Resolve `from` as the merge base of `to` and `from`, instead of using it directly.'
+    required: false
+    default: 'false'
+  commit-message-include:
+    description: 'Regular expressions to include commits by message (OR), one per line.'
+    required: false
+  commit-message-exclude:
+    description: 'Regular expressions to exclude commits by message (OR), one per line.'
+    required: false
+  include-package-directory:
+    description: 'Additional package directories to include in the diff, one per line.'
+    required: false
+  exclude-package-directory:
+    description: 'Package directories to exclude from the diff, one per line.'
+    required: false
+  team:
+    description: 'Optional team or squad label for the summary.'
+    required: false
+  output:
+    description: 'Output file path for the generated summary.'
+    required: false
+    default: 'metadata-summary.md'
+  model:
+    description: 'Chat model id used for the summary.'
+    required: false
+  max-diff-chars:
+    description: 'Maximum size of the unified diff sent to the LLM (characters).'
+    required: false
+  context-lines:
+    description: 'Number of context lines around each change in the unified diff.'
+    required: false
+  ignore-whitespace:
+    description: 'Ignore whitespace-only changes when building the diff.'
+    required: false
+    default: 'false'
+  strip-diff-preamble:
+    description: 'Strip low-value diff --git/index/mode/similarity/rename/copy lines from the unified diff.'
+    required: false
+    default: 'false'
+  max-hunk-lines:
+    description: 'Cap the body of each diff hunk; anything past the limit is elided.'
+    required: false
+  exclude-default-noise:
+    description: "Merge smart-diff's built-in noise exclude list into the excluded paths."
+    required: false
+    default: 'false'
+  map-reduce:
+    description: 'Split oversized diffs into per-file batches instead of truncating.'
+    required: false
+    default: 'false'
+  redact-secrets:
+    description: 'Mask likely secrets/credentials in the diff before sending it to the LLM.'
+    required: false
+    default: 'false'
+  max-retries:
+    description: 'Retry count for transient LLM call failures.'
+    required: false
+
+outputs:
+  summary-path:
+    description: 'Path to the generated Markdown summary file.'
+  request-count:
+    description: 'Number of LLM requests made while generating the summary.'
+  input-tokens:
+    description: 'LLM input tokens consumed.'
+  output-tokens:
+    description: 'LLM output tokens consumed.'
+  cached-input-tokens:
+    description: 'LLM cached input tokens consumed.'
+  total-tokens:
+    description: 'Total LLM tokens consumed.'
+
+runs:
+  using: 'node24'
+  main: 'dist/action/index.cjs'

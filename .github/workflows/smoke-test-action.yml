@@ -1,0 +1,107 @@
+# Manual smoke test: exercises the Action end to end on real GitHub Actions
+# infra using a synthetic commit in a scratch repo.
+#
+# Two sources, deliberately not the same:
+# - pull_request: uses `./` (this checkout's actual action.yml/dist/action) -
+#   validates what's about to be merged before it ever reaches @v5.
+# - workflow_dispatch: uses `@v5` (the live published tag) - an on-demand
+#   check that what's actually public still works, run manually post-release.
+name: Smoke test (published Action)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/smoke-test-action.yml'
+      - 'action.yml'
+      - 'dist/action/**'
+      - 'src/action/**'
+      - 'src/metadata/**'
+      - 'src/ai/**'
+      - 'src/salesforce/**'
+
+permissions:
+  contents: read
+
+jobs:
+  success-path-local:
+    name: Success path (local checkout)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Make a scratch commit to diff against
+        run: |
+          mkdir -p force-app/main/default/classes
+          cat > force-app/main/default/classes/SmokeTest.cls <<'EOF'
+          public class SmokeTest {
+              public static void run() {}
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add force-app/main/default/classes/SmokeTest.cls
+          git commit -m "chore: smoke test metadata change"
+
+      - name: Generate metadata summary
+        id: summarize
+        uses: ./
+        with:
+          from: 'HEAD~1'
+          output: 'smoke-summary.md'
+          include-package-directory: 'force-app'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Show outputs and report
+        run: |
+          echo "summary-path: ${{ steps.summarize.outputs.summary-path }}"
+          echo "request-count: ${{ steps.summarize.outputs.request-count }}"
+          echo "total-tokens: ${{ steps.summarize.outputs.total-tokens }}"
+          echo "---"
+          cat smoke-summary.md
+
+  success-path-published:
+    name: Success path (published @v5)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Make a scratch commit to diff against
+        run: |
+          mkdir -p force-app/main/default/classes
+          cat > force-app/main/default/classes/SmokeTest.cls <<'EOF'
+          public class SmokeTest {
+              public static void run() {}
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add force-app/main/default/classes/SmokeTest.cls
+          git commit -m "chore: smoke test metadata change"
+
+      - name: Generate metadata summary
+        id: summarize
+        uses: mcarvin8/sf-git-ai-meta-insights@v5
+        with:
+          from: 'HEAD~1'
+          output: 'smoke-summary.md'
+          include-package-directory: 'force-app'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Show outputs and report
+        run: |
+          echo "summary-path: ${{ steps.summarize.outputs.summary-path }}"
+          echo "request-count: ${{ steps.summarize.outputs.request-count }}"
+          echo "total-tokens: ${{ steps.summarize.outputs.total-tokens }}"
+          echo "---"
+          cat smoke-summary.md
