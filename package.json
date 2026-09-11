@@ -3,7 +3,7 @@
   "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
   "version": "5.3.0",
   "dependencies": {
-    "@mcarvin/smart-diff": "6.2.0",
+    "@mcarvin/smart-diff": "6.3.0",
     "@oclif/core": "5.0.0",
     "@salesforce/core": "9.1.11",
     "@salesforce/sf-plugins-core": "13.0.4"
