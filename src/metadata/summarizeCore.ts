@@ -11,7 +11,6 @@ import {
   resolveLanguageModel,
   summarizeGitDiff,
 } from '@mcarvin/smart-diff';
-import { SfError } from '@salesforce/core';
 
 import {
   buildReferenceDocsModelProvider,
@@ -21,6 +20,7 @@ import {
   validateReferenceUrls,
 } from '../ai/referenceDocs.js';
 import { SALESFORCE_METADATA_SYSTEM_PROMPT } from '../ai/salesforceMetadataPrompt.js';
+import { SgaiError } from '../errors.js';
 import { resolveMetadataSummaryTeam } from '../salesforce/metadataSummaryContext.js';
 import {
   fetchReleaseNotes,
@@ -78,7 +78,7 @@ export async function runMetadataSummarize(
   const referenceUrls = validateReferenceUrls(options['reference-url']);
 
   if (!isLlmProviderConfigured()) {
-    throw new SfError(LLM_GATEWAY_REQUIRED_MESSAGE, 'NoLlmProvider');
+    throw new SgaiError(LLM_GATEWAY_REQUIRED_MESSAGE, { name: 'NoLlmProvider' });
   }
 
   const to = options.to ?? 'HEAD';
@@ -91,7 +91,7 @@ export async function runMetadataSummarize(
   const { includeFolders, excludePackageDirectories } = await resolveIncludeFoldersAndExclude(git, options);
 
   if (includeFolders.length === 0) {
-    throw new SfError(noPackageDirectoriesError, 'NoPackageDirectories');
+    throw new SgaiError(noPackageDirectoriesError, { name: 'NoPackageDirectories' });
   }
 
   const commits = await getCommits(git, from, to);

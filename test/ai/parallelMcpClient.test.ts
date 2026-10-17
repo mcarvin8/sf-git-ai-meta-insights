@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { callParallelTool, PARALLEL_MCP_ENDPOINT, ParallelMcpError } from '../../src/ai/parallelMcpClient.js';
+import { callParallelTool, PARALLEL_MCP_ENDPOINT } from '../../src/ai/parallelMcpClient.js';
+import { SgaiError } from '../../src/errors.js';
 import { mockParallelMcp, structured } from './parallelMcp.fixture.js';
 
 describe('callParallelTool', () => {
@@ -99,7 +100,7 @@ describe('callParallelTool', () => {
       content: [{ type: 'text', text: 'Rate limit exceeded' }],
     }));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(ParallelMcpError);
+    expect(error).toBeInstanceOf(SgaiError);
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).name).toBe('ReferenceDocsToolError');
     expect((error as Error).message).toBe('Parallel web_fetch failed: Rate limit exceeded');
@@ -115,15 +116,15 @@ describe('callParallelTool', () => {
   it('rejects non-JSON text content', async () => {
     const { fetchImpl } = mockParallelMcp(() => ({ content: [{ type: 'text', text: 'not JSON' }] }));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(ParallelMcpError);
+    expect(error).toBeInstanceOf(SgaiError);
     expect((error as Error).name).toBe('ReferenceDocsInvalidResponse');
     expect((error as Error).message).toBe('Parallel web_fetch returned a response that is not JSON.');
     expect((error as Error).cause).toBeInstanceOf(SyntaxError);
   });
 
   it('only sets a cause when one is given', () => {
-    expect(new ParallelMcpError('m', { name: 'N' })).not.toHaveProperty('cause');
-    expect(new ParallelMcpError('m', { name: 'N', cause: 'why' }).cause).toBe('why');
+    expect(new SgaiError('m', { name: 'N' })).not.toHaveProperty('cause');
+    expect(new SgaiError('m', { name: 'N', cause: 'why' }).cause).toBe('why');
   });
 
   it('rejects JSON-RPC errors', async () => {

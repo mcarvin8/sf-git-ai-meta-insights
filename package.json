@@ -127,6 +127,7 @@
         "src/metadata/**/*.ts",
         "src/ai/**/*.ts",
         "src/salesforce/**/*.ts",
+        "src/errors.ts",
         "tsconfig.json"
       ],
       "output": [
