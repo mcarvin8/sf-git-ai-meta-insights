@@ -1,0 +1,16 @@
+{
+  "name": "sf-git-ai-meta-insights-sf-release-notes-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node summarize.mjs",
+    "test": "node --test checks.mjs"
+  },
+  "engines": {
+    "node": ">=22.22.1"
+  },
+  "dependencies": {
+    "@mcarvin/smart-diff": "file:../..",
+    "@modelcontextprotocol/sdk": "1.32.1"
+  }
+}
