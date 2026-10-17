@@ -33,8 +33,8 @@ jobs:
         run: npm run lint:engine
 
   unit-tests:
-    name: Unit Tests (${ { { matrix.os } } }, node ${ { { matrix.node-version } } })
-    runs-on: ${ { { matrix.os } } }
+    name: Unit Tests (${{ matrix.os }}, node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -82,8 +82,8 @@ jobs:
 
   nuts:
     needs: unit-tests
-    name: NUTs (${ { { matrix.os } } }, node ${ { { matrix.node-version } } })
-    runs-on: ${ { { matrix.os } } }
+    name: NUTs (${{ matrix.os }}, node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
