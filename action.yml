@@ -72,6 +72,17 @@ inputs:
   max-retries:
     description: 'Retry count for transient LLM call failures.'
     required: false
+  reference-url:
+    description: >-
+      Public HTTPS documentation URLs, one per line, fetched with Parallel Search MCP and given to
+      the model as cited reference context. Only the URLs are sent to Parallel.
+    required: false
+  release-notes:
+    description: >-
+      Add the Salesforce Metadata API release notes for the `sourceApiVersion` in `sfdx-project.json`
+      as reference context. Skipped with a warning when no usable release notes are retrieved.
+    required: false
+    default: 'false'
 
 outputs:
   summary-path:
@@ -86,6 +97,8 @@ outputs:
     description: 'LLM cached input tokens consumed.'
   total-tokens:
     description: 'Total LLM tokens consumed.'
+  references:
+    description: 'Newline-separated URLs of the reference documentation added to the prompt.'
 
 runs:
   using: 'node24'

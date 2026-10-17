@@ -52,9 +52,11 @@ export async function run(): Promise<void> {
       'map-reduce': core.getBooleanInput('map-reduce'),
       'redact-secrets': core.getBooleanInput('redact-secrets'),
       'max-retries': optionalIntegerInput('max-retries'),
+      'reference-url': multilineInput('reference-url'),
+      'release-notes': core.getBooleanInput('release-notes'),
     };
 
-    const { path, usage } = await runMetadataSummarize(
+    const { path, usage, references } = await runMetadataSummarize(
       options,
       NO_PACKAGE_DIRECTORIES_ERROR,
       noCommitsAfterFilterError,
@@ -67,6 +69,7 @@ export async function run(): Promise<void> {
     core.setOutput('output-tokens', usage.outputTokens);
     core.setOutput('cached-input-tokens', usage.cachedInputTokens);
     core.setOutput('total-tokens', usage.totalTokens);
+    core.setOutput('references', references.join('\n'));
 
     core.info(
       `LLM usage: ${usage.requestCount} request(s), ${usage.inputTokens} input tokens, ` +

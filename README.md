@@ -288,6 +288,8 @@ _See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8
 | `map-reduce`                   | Split oversized diffs into per-file batches instead of truncating.                             | No       | `false`                 |
 | `redact-secrets`                | Mask likely secrets/credentials in the diff before sending it to the LLM.                     | No       | `false`                 |
 | `max-retries`                   | Retry count for transient LLM call failures.                                                  | No       |                         |
+| `reference-url`                 | Public HTTPS documentation URLs, one per line, given to the model as cited reference context. See [C)](#c-explain-changes-with-salesforce-release-notes-or-other-docs). | No       |                         |
+| `release-notes`                 | Add the Salesforce Metadata API release notes for the project's `sourceApiVersion` as reference context. | No       | `false`                 |
 
 ### Outputs
 
@@ -299,6 +301,7 @@ _See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8
 | `output-tokens`         | LLM output tokens consumed.                                 |
 | `cached-input-tokens`    | LLM cached input tokens consumed.                            |
 | `total-tokens`          | Total LLM tokens consumed.                                   |
+| `references`            | Newline-separated URLs of the reference documentation added to the prompt. |
 
 ### Example: deploy-summary comment on a PR
 
@@ -427,9 +430,28 @@ sf sgai metadata summarize --from origin/main --to origin/your-mr-branch --outpu
 
 Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://docs.gitlab.com/ee/api/notes.html) or your preferred CI comment action.
 
+### C) Explain changes with Salesforce release notes or other docs
+
+Give the model documentation to explain the diff with, so the summary can call out what a release changed and cite where it says so. Documentation is fetched with the anonymous [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) endpoint; it needs no account or API key for light use.
+
+```bash
+# Metadata API release notes for the project's sourceApiVersion
+# (and every release the range upgraded through, up to 3)
+sf sgai metadata summarize --from origin/main --release-notes
+
+# Any public docs page, such as a migration guide or package changelog
+sf sgai metadata summarize --from v1.4.0 \
+  --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
+```
+
+- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). help.salesforce.com does not always return readable content to automated retrieval, so when no usable notes are found the command logs a warning and summarizes without them.
+- `--reference-url` is strict: if a URL cannot be retrieved, the command stops before calling the LLM rather than summarizing without the context you asked for.
+- Only the URLs (and, for release-notes fallback, a search query naming the release) go to Parallel. The diff goes only to your configured LLM provider. Use public URLs without credentials or private query parameters.
+- Excerpts are capped at 12,000 characters in total and are treated as untrusted reference material: the model is told to cite the URL for documentation-based claims and to separate documentation guidance from changes in the patch. With `--map-reduce`, documentation is added only to the final synthesis call. Review the output against the patch; this is a summary aid, not a compatibility check.
+
 ## How it works
 
-The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into AI generated markdown summaries.
+The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into AI generated markdown summaries. When `--reference-url` or `--release-notes` is set, the resolved model is wrapped so its prompt also carries the retrieved documentation excerpts.
 
 After writing the summary file, the command logs LLM usage (request count, input/output/cached/total tokens) to help track model spend.
 

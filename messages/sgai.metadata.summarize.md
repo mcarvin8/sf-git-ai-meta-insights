@@ -166,6 +166,22 @@ Resolve `--from` as the merge base of `--to` and `--from`, instead of using it d
 
 When set, the start of the diff range is resolved as the merge base of `--to` and `--from`, e.g. `--to develop --from main --merge-base` is equivalent to `--from $(git merge-base develop main) --to develop`, resolved in-process with no local git binary required. Defaults to false, in which case `--from` is used as-is.
 
+# flags.reference-url.summary
+
+Public documentation URL to fetch and give the model as reference context.
+
+# flags.reference-url.description
+
+Fetches excerpts from each URL with the anonymous Parallel Search MCP endpoint (`https://search.parallel.ai/mcp`, no account or API key needed) and adds them to the summary prompt as untrusted reference material. The model is asked to cite the URL for documentation-based claims and to distinguish documentation guidance from changes in the patch. Use for release notes, migration guides, or package changelogs that explain the change. Only the URL is sent to Parallel; the diff is only sent to your configured LLM provider. Must be a public HTTPS URL without credentials or private query parameters. Retrieval failures stop the command before the LLM is called. Excerpts are capped at 12,000 characters in total, shared with `--release-notes`. Repeatable.
+
+# flags.release-notes.summary
+
+Add the Salesforce Metadata API release notes for the project's `sourceApiVersion` as reference context.
+
+# flags.release-notes.description
+
+Reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from`, maps it to its Salesforce release (for example `64.0` to Summer '25), and fetches the Metadata API section of those release notes through Parallel Search MCP (see `--reference-url`). When the range upgrades `sourceApiVersion`, every release upgraded through is included (at most the 3 most recent). help.salesforce.com does not always serve readable content to automated retrieval, so when no usable release notes are found a warning is logged and the summary is generated without them. Defaults to false.
+
 # examples
 
 - <%= config.bin %> <%= command.id %> --from HEAD~5 --to HEAD --commit-message-include "(feature|fix)" --output changes.md
@@ -176,3 +192,5 @@ When set, the start of the diff range is resolved as the merge base of `--to` an
 - <%= config.bin %> <%= command.id %> --from HEAD~20 --to HEAD --max-diff-chars 20000 --map-reduce
 - <%= config.bin %> <%= command.id %> --from HEAD~1 --redact-secrets
 - <%= config.bin %> <%= command.id %> --to develop --from main --merge-base
+- <%= config.bin %> <%= command.id %> --from origin/main --release-notes
+- <%= config.bin %> <%= command.id %> --from v1.4.0 --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
