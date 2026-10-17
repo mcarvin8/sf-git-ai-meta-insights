@@ -62,7 +62,7 @@ jobs:
         run: npm run build
 
       - name: Install release-notes example dependencies
-        run: npm ci --prefix examples/sf-release-notes
+        run: npm install --prefix examples/sf-release-notes
 
       - name: Check release-notes example
         run: npm test --prefix examples/sf-release-notes
