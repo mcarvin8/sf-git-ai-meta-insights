@@ -1,7 +1,6 @@
-import { SfError } from '@salesforce/core';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { callParallelTool, PARALLEL_MCP_ENDPOINT } from '../../src/ai/parallelMcpClient.js';
+import { callParallelTool, PARALLEL_MCP_ENDPOINT, ParallelMcpError } from '../../src/ai/parallelMcpClient.js';
 import { mockParallelMcp, structured } from './parallelMcp.fixture.js';
 
 describe('callParallelTool', () => {
@@ -100,9 +99,10 @@ describe('callParallelTool', () => {
       content: [{ type: 'text', text: 'Rate limit exceeded' }],
     }));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(SfError);
-    expect((error as SfError).name).toBe('ReferenceDocsToolError');
-    expect((error as SfError).message).toBe('Parallel web_fetch failed: Rate limit exceeded');
+    expect(error).toBeInstanceOf(ParallelMcpError);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).name).toBe('ReferenceDocsToolError');
+    expect((error as Error).message).toBe('Parallel web_fetch failed: Rate limit exceeded');
   });
 
   it('reports an unknown tool error when the error has no text', async () => {
@@ -114,9 +114,16 @@ describe('callParallelTool', () => {
 
   it('rejects non-JSON text content', async () => {
     const { fetchImpl } = mockParallelMcp(() => ({ content: [{ type: 'text', text: 'not JSON' }] }));
-    await expect(callParallelTool('web_fetch', {}, { fetchImpl })).rejects.toThrow(
-      'Parallel web_fetch returned a response that is not JSON.',
-    );
+    const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ParallelMcpError);
+    expect((error as Error).name).toBe('ReferenceDocsInvalidResponse');
+    expect((error as Error).message).toBe('Parallel web_fetch returned a response that is not JSON.');
+    expect((error as Error).cause).toBeInstanceOf(SyntaxError);
+  });
+
+  it('only sets a cause when one is given', () => {
+    expect(new ParallelMcpError('m', { name: 'N' })).not.toHaveProperty('cause');
+    expect(new ParallelMcpError('m', { name: 'N', cause: 'why' }).cause).toBe('why');
   });
 
   it('rejects JSON-RPC errors', async () => {
@@ -136,15 +143,15 @@ describe('callParallelTool', () => {
   it('rejects a response without the matching request id', async () => {
     const { fetchImpl } = mockParallelMcp(() => new Response('garbage'));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
-    expect((error as SfError).name).toBe('ReferenceDocsInvalidResponse');
-    expect((error as SfError).message).toBe('Parallel MCP returned no response for request 2.');
+    expect((error as Error).name).toBe('ReferenceDocsInvalidResponse');
+    expect((error as Error).message).toBe('Parallel MCP returned no response for request 2.');
   });
 
   it('rejects HTTP failures with the method and status', async () => {
     const { fetchImpl } = mockParallelMcp(() => new Response('busy', { status: 429 }));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
-    expect((error as SfError).name).toBe('ReferenceDocsRequestFailed');
-    expect((error as SfError).message).toBe(
+    expect((error as Error).name).toBe('ReferenceDocsRequestFailed');
+    expect((error as Error).message).toBe(
       'Parallel MCP request "tools/call" failed with HTTP 429. Anonymous use is rate limited; set PARALLEL_API_KEY for higher limits.',
     );
 

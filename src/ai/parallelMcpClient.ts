@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import { SfError } from '@salesforce/core';
-
 /** Parallel Search MCP endpoint. Anonymous use needs no account or API key. */
 export const PARALLEL_MCP_ENDPOINT = 'https://search.parallel.ai/mcp';
 
@@ -19,6 +17,17 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const RUN_SESSION_ID = randomUUID();
 
 export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
+
+/**
+ * Plain `Error` subclass for Parallel MCP failures. Deliberately free of `@salesforce/core` errors so
+ * the client behaves the same inside the bundled GitHub Action.
+ */
+export class ParallelMcpError extends Error {
+  public constructor(message: string, { name, cause }: { name: string; cause?: unknown }) {
+    super(message, cause === undefined ? undefined : { cause });
+    this.name = name;
+  }
+}
 
 export type ParallelToolOptions = {
   fetchImpl?: FetchLike;
@@ -79,9 +88,9 @@ export async function callParallelTool(
         response.status === 429 && !apiKey
           ? ` Anonymous use is rate limited; set ${PARALLEL_API_KEY_ENV} for higher limits.`
           : '';
-      throw new SfError(
+      throw new ParallelMcpError(
         `Parallel MCP request "${String(body.method)}" failed with HTTP ${response.status}.${hint}`,
-        'ReferenceDocsRequestFailed',
+        { name: 'ReferenceDocsRequestFailed' },
       );
     }
     return response;
@@ -131,13 +140,14 @@ async function readRpcResult(response: Response, id: number): Promise<unknown> {
     : [parseJson(text)];
   const message = messages.find((m) => m?.id === id);
   if (!message) {
-    throw new SfError(`Parallel MCP returned no response for request ${id}.`, 'ReferenceDocsInvalidResponse');
+    throw new ParallelMcpError(`Parallel MCP returned no response for request ${id}.`, {
+      name: 'ReferenceDocsInvalidResponse',
+    });
   }
   if (message.error) {
-    throw new SfError(
-      `Parallel MCP error: ${message.error.message ?? JSON.stringify(message.error)}`,
-      'ReferenceDocsRequestFailed',
-    );
+    throw new ParallelMcpError(`Parallel MCP error: ${message.error.message ?? JSON.stringify(message.error)}`, {
+      name: 'ReferenceDocsRequestFailed',
+    });
   }
   return message.result;
 }
@@ -162,14 +172,15 @@ function parseToolResult(name: string, result: ToolCallResult | undefined): unkn
     .filter((block) => block.type === 'text' && typeof block.text === 'string')
     .map((block) => block.text as string);
   if (result?.isError) {
-    throw new SfError(`Parallel ${name} failed: ${textBlocks.join(' ') || 'unknown error'}`, 'ReferenceDocsToolError');
+    throw new ParallelMcpError(`Parallel ${name} failed: ${textBlocks.join(' ') || 'unknown error'}`, {
+      name: 'ReferenceDocsToolError',
+    });
   }
   if (result?.structuredContent !== undefined) return result.structuredContent;
   try {
     return JSON.parse(textBlocks.join('\n')) as unknown;
   } catch (err) {
-    throw SfError.create({
-      message: `Parallel ${name} returned a response that is not JSON.`,
+    throw new ParallelMcpError(`Parallel ${name} returned a response that is not JSON.`, {
       name: 'ReferenceDocsInvalidResponse',
       cause: err,
     });
