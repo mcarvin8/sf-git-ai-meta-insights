@@ -1,5 +1,4 @@
 import { type ChatCallOptions, type ChatModel, DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT } from '@mcarvin/smart-diff';
-import { SfError } from '@salesforce/core';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -11,6 +10,7 @@ import {
   searchReferenceDocs,
   validateReferenceUrls,
 } from '../../src/ai/referenceDocs.js';
+import { SgaiError } from '../../src/errors.js';
 import { LONG_TEXT, mockParallelMcp, structured } from './parallelMcp.fixture.js';
 
 const URL_A = 'https://example.com/a';
@@ -40,9 +40,9 @@ describe('validateReferenceUrls', () => {
     } catch (e) {
       caught = e;
     }
-    expect(caught).toBeInstanceOf(SfError);
-    expect((caught as SfError).name).toBe('InvalidReferenceUrl');
-    expect((caught as SfError).message).toBe(
+    expect(caught).toBeInstanceOf(SgaiError);
+    expect((caught as Error).name).toBe('InvalidReferenceUrl');
+    expect((caught as Error).message).toBe(
       `--reference-url must be a public HTTPS URL without credentials (received ${JSON.stringify(url)}).`,
     );
   });
@@ -117,8 +117,8 @@ describe('fetchReferenceDocs', () => {
       structured({ results: [], errors: [{ url: URL_A, error_type: 'FETCH_ERROR' }] }),
     );
     const error = await fetchReferenceDocs([URL_A], { fetchImpl }).catch((e: unknown) => e);
-    expect((error as SfError).name).toBe('ReferenceDocsFetch');
-    expect((error as SfError).message).toContain('FETCH_ERROR');
+    expect((error as Error).name).toBe('ReferenceDocsFetch');
+    expect((error as Error).message).toContain('FETCH_ERROR');
   });
 
   it.each([
@@ -130,8 +130,8 @@ describe('fetchReferenceDocs', () => {
   ])('rejects %s', async (_label, data) => {
     const { fetchImpl } = mockParallelMcp(() => structured(data));
     const error = await fetchReferenceDocs([URL_A], { fetchImpl }).catch((e: unknown) => e);
-    expect((error as SfError).name).toBe('ReferenceDocsEmpty');
-    expect((error as SfError).message).toBe(
+    expect((error as Error).name).toBe('ReferenceDocsEmpty');
+    expect((error as Error).message).toBe(
       `No usable reference documentation was returned for ${URL_A}. The page may require JavaScript or block automated retrieval.`,
     );
   });
@@ -139,7 +139,7 @@ describe('fetchReferenceDocs', () => {
   it('accepts text at the minimum length and honors a custom minimum', async () => {
     const { fetchImpl } = mockParallelMcp(() => structured({ results: [{ url: URL_A, excerpts: ['z'.repeat(200)] }] }));
     await expect(fetchReferenceDocs([URL_A], { fetchImpl })).resolves.toHaveLength(1);
-    await expect(fetchReferenceDocs([URL_A], { fetchImpl, minChars: 201 })).rejects.toThrow(SfError);
+    await expect(fetchReferenceDocs([URL_A], { fetchImpl, minChars: 201 })).rejects.toThrow(SgaiError);
   });
 });
 

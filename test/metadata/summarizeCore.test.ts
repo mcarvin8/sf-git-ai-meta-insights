@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises';
-import { SfError } from '@salesforce/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SgaiError } from '../../src/errors.js';
 
 vi.mock('@mcarvin/smart-diff', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mcarvin/smart-diff')>();
@@ -157,7 +157,7 @@ describe('runMetadataSummarize', () => {
     );
   });
 
-  it('throws SfError when LLM provider is not configured', async () => {
+  it('throws SgaiError when LLM provider is not configured', async () => {
     vi.mocked(isLlmProviderConfigured).mockReturnValue(false);
     let caught: unknown;
     try {
@@ -165,32 +165,32 @@ describe('runMetadataSummarize', () => {
     } catch (e) {
       caught = e;
     }
-    expect(caught).toBeInstanceOf(SfError);
-    expect((caught as SfError).name).toBe('NoLlmProvider');
+    expect(caught).toBeInstanceOf(SgaiError);
+    expect((caught as SgaiError).name).toBe('NoLlmProvider');
   });
 
-  it('throws SfError when max-diff-chars is below valid range', async () => {
+  it('throws SgaiError when max-diff-chars is below valid range', async () => {
     await expect(
       runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-diff-chars': 100 }, 'no pkg dirs', () => 'no commits', vi.fn()),
-    ).rejects.toBeInstanceOf(SfError);
+    ).rejects.toBeInstanceOf(SgaiError);
   });
 
-  it('throws SfError when context-lines is out of valid range', async () => {
+  it('throws SgaiError when context-lines is out of valid range', async () => {
     await expect(
       runMetadataSummarize({ ...MINIMAL_OPTIONS, 'context-lines': -1 }, 'no pkg dirs', () => 'no commits', vi.fn()),
-    ).rejects.toBeInstanceOf(SfError);
+    ).rejects.toBeInstanceOf(SgaiError);
   });
 
-  it('throws SfError when max-hunk-lines is below valid range', async () => {
+  it('throws SgaiError when max-hunk-lines is below valid range', async () => {
     await expect(
       runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-hunk-lines': 0 }, 'no pkg dirs', () => 'no commits', vi.fn()),
-    ).rejects.toBeInstanceOf(SfError);
+    ).rejects.toBeInstanceOf(SgaiError);
   });
 
-  it('throws SfError when max-retries is negative', async () => {
+  it('throws SgaiError when max-retries is negative', async () => {
     await expect(
       runMetadataSummarize({ ...MINIMAL_OPTIONS, 'max-retries': -1 }, 'no pkg dirs', () => 'no commits', vi.fn()),
-    ).rejects.toBeInstanceOf(SfError);
+    ).rejects.toBeInstanceOf(SgaiError);
   });
 
   it('throws with noPackageDirectoriesError message when no include folders resolved', async () => {
@@ -201,9 +201,9 @@ describe('runMetadataSummarize', () => {
     } catch (e) {
       caught = e;
     }
-    expect(caught).toBeInstanceOf(SfError);
-    expect((caught as SfError).message).toBe('no package directories!');
-    expect((caught as SfError).name).toBe('NoPackageDirectories');
+    expect(caught).toBeInstanceOf(SgaiError);
+    expect((caught as SgaiError).message).toBe('no package directories!');
+    expect((caught as SgaiError).name).toBe('NoPackageDirectories');
   });
 
   it('resolves from locally via getMergeBase for commit filtering when merge-base is set, but passes raw from/mergeBase to summarizeGitDiff', async () => {
@@ -241,7 +241,7 @@ describe('runMetadataSummarize', () => {
         noCommitsAfterFilterError,
         vi.fn(),
       ),
-    ).rejects.toBeInstanceOf(SfError);
+    ).rejects.toBeInstanceOf(SgaiError);
     expect(noCommitsAfterFilterError).toHaveBeenCalledWith('abc123', 'HEAD', '["feat"]', '[]');
   });
 

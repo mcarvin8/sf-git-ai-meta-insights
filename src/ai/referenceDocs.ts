@@ -1,6 +1,5 @@
 import { type ChatModel, DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT, type LlmModelProvider } from '@mcarvin/smart-diff';
-import { SfError } from '@salesforce/core';
-
+import { SgaiError } from '../errors.js';
 import { callParallelTool, type ParallelToolOptions } from './parallelMcpClient.js';
 
 /** Total characters of reference excerpts added to the prompt, split evenly across documents. */
@@ -44,16 +43,15 @@ export function validateReferenceUrls(urls: string[] | undefined): string[] {
     try {
       parsed = new URL(trimmed);
     } catch (err) {
-      throw SfError.create({
-        message: `--reference-url is not a valid URL: ${JSON.stringify(trimmed)}`,
+      throw new SgaiError(`--reference-url is not a valid URL: ${JSON.stringify(trimmed)}`, {
         name: 'InvalidReferenceUrl',
         cause: err,
       });
     }
     if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
-      throw new SfError(
+      throw new SgaiError(
         `--reference-url must be a public HTTPS URL without credentials (received ${JSON.stringify(trimmed)}).`,
-        'InvalidReferenceUrl',
+        { name: 'InvalidReferenceUrl' },
       );
     }
     if (!out.includes(parsed.href)) out.push(parsed.href);
@@ -70,16 +68,18 @@ export async function fetchReferenceDocs(urls: string[], options: ReferenceDocsO
     options,
   )) as ParallelResults;
   if (data?.errors && data.errors.length > 0) {
-    throw new SfError(`Reference documentation retrieval failed: ${JSON.stringify(data.errors)}`, 'ReferenceDocsFetch');
+    throw new SgaiError(`Reference documentation retrieval failed: ${JSON.stringify(data.errors)}`, {
+      name: 'ReferenceDocsFetch',
+    });
   }
   const perDoc = Math.floor((options.charBudget ?? MAX_REFERENCE_CHARS) / urls.length);
   return urls.map((url) => {
     const page = (data?.results ?? []).find((result) => result.url === url);
     const doc = page ? toReferenceDoc(page, perDoc, options) : undefined;
     if (!doc) {
-      throw new SfError(
+      throw new SgaiError(
         `No usable reference documentation was returned for ${url}. The page may require JavaScript or block automated retrieval.`,
-        'ReferenceDocsEmpty',
+        { name: 'ReferenceDocsEmpty' },
       );
     }
     return doc;

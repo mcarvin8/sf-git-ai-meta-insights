@@ -19,6 +19,7 @@ on:
       - 'src/metadata/**'
       - 'src/ai/**'
       - 'src/salesforce/**'
+      - 'src/errors.ts'
 
 permissions:
   contents: read

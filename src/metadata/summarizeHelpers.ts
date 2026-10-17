@@ -1,6 +1,6 @@
 import type { CommitInfo } from '@mcarvin/smart-diff';
 import { filterCommitsByMessageRegexes } from '@mcarvin/smart-diff';
-import { SfError } from '@salesforce/core';
+import { SgaiError } from '../errors.js';
 import {
   type GitClient,
   getSalesforceMetadataIncludeFolders,
@@ -11,37 +11,36 @@ export function validateMaxDiffCharsRange(maxDiffChars: number | undefined): voi
   // Stryker disable-next-line ConditionalExpression
   if (maxDiffChars === undefined) return;
   if (maxDiffChars < 5000 || maxDiffChars > 5_000_000) {
-    throw new SfError(
-      `--max-diff-chars must be between 5000 and 5,000,000 (received ${maxDiffChars}).`,
-      'InvalidMaxDiffChars',
-    );
+    throw new SgaiError(`--max-diff-chars must be between 5000 and 5,000,000 (received ${maxDiffChars}).`, {
+      name: 'InvalidMaxDiffChars',
+    });
   }
 }
 
 export function validateContextLinesRange(contextLines: number | undefined): void {
   if (contextLines === undefined) return;
   if (!Number.isInteger(contextLines) || contextLines < 0 || contextLines > 1000) {
-    throw new SfError(
-      `--context-lines must be an integer between 0 and 1000 (received ${contextLines}).`,
-      'InvalidContextLines',
-    );
+    throw new SgaiError(`--context-lines must be an integer between 0 and 1000 (received ${contextLines}).`, {
+      name: 'InvalidContextLines',
+    });
   }
 }
 
 export function validateMaxHunkLinesRange(maxHunkLines: number | undefined): void {
   if (maxHunkLines === undefined) return;
   if (!Number.isInteger(maxHunkLines) || maxHunkLines < 1 || maxHunkLines > 100_000) {
-    throw new SfError(
-      `--max-hunk-lines must be an integer between 1 and 100,000 (received ${maxHunkLines}).`,
-      'InvalidMaxHunkLines',
-    );
+    throw new SgaiError(`--max-hunk-lines must be an integer between 1 and 100,000 (received ${maxHunkLines}).`, {
+      name: 'InvalidMaxHunkLines',
+    });
   }
 }
 
 export function validateMaxRetriesRange(maxRetries: number | undefined): void {
   if (maxRetries === undefined) return;
   if (!Number.isInteger(maxRetries) || maxRetries < 0) {
-    throw new SfError(`--max-retries must be a non-negative integer (received ${maxRetries}).`, 'InvalidMaxRetries');
+    throw new SgaiError(`--max-retries must be a non-negative integer (received ${maxRetries}).`, {
+      name: 'InvalidMaxRetries',
+    });
   }
 }
 
@@ -98,7 +97,7 @@ export function throwIfNoCommitsAfterMessageFilter(
   errorMessage: string,
 ): void {
   if (commits.length > 0 && filteredCommits.length === 0 && (includeRegexes.length > 0 || excludeRegexes.length > 0)) {
-    throw new SfError(errorMessage, 'NoCommitsAfterFilter');
+    throw new SgaiError(errorMessage, { name: 'NoCommitsAfterFilter' });
   }
 }
 
@@ -117,8 +116,7 @@ export function validateCommitMessageRegexes(patterns: string[], kind: 'include'
       const needle =
         kind === 'include' ? 'Invalid commit message include pattern' : 'Invalid commit message exclude pattern';
       if (message.includes(needle)) {
-        throw SfError.create({
-          message: `Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`,
+        throw new SgaiError(`Invalid commit message ${kind} regular expression: ${JSON.stringify(pattern)}`, {
           name: kind === 'include' ? 'InvalidMessageInclude' : 'InvalidMessageExclude',
           cause: err,
         });

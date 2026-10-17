@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SfError } from '@salesforce/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SgaiError } from '../../src/errors.js';
 
 vi.mock('@mcarvin/smart-diff', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mcarvin/smart-diff')>();
@@ -20,7 +20,6 @@ vi.mock('../../src/salesforce/sfdxPackagePaths.js', async (importOriginal) => {
 });
 
 import { filterCommitsByMessageRegexes } from '@mcarvin/smart-diff';
-import { getSalesforceMetadataIncludeFolders, type GitClient } from '../../src/salesforce/sfdxPackagePaths.js';
 import {
   getValidatedCommitMessageRegexLists,
   mergeUniqueRepoRelativePaths,
@@ -32,17 +31,18 @@ import {
   validateMaxDiffCharsRange,
   validateMaxHunkLinesRange,
 } from '../../src/metadata/summarizeHelpers.js';
+import { type GitClient, getSalesforceMetadataIncludeFolders } from '../../src/salesforce/sfdxPackagePaths.js';
 
-function assertSfError(fn: () => unknown, errorName: string, messageHint: string): void {
+function assertSgaiError(fn: () => unknown, errorName: string, messageHint: string): void {
   let caught: unknown;
   try {
     fn();
   } catch (e) {
     caught = e;
   }
-  expect(caught).toBeInstanceOf(SfError);
-  expect((caught as SfError).name).toBe(errorName);
-  expect((caught as SfError).message).toContain(messageHint);
+  expect(caught).toBeInstanceOf(SgaiError);
+  expect((caught as SgaiError).name).toBe(errorName);
+  expect((caught as SgaiError).message).toContain(messageHint);
 }
 
 describe('validateMaxDiffCharsRange', () => {
@@ -54,8 +54,8 @@ describe('validateMaxDiffCharsRange', () => {
     expect(() => validateMaxDiffCharsRange(5000)).not.toThrow();
   });
 
-  it('throws SfError below lower boundary (4999)', () => {
-    assertSfError(
+  it('throws SgaiError below lower boundary (4999)', () => {
+    assertSgaiError(
       () => validateMaxDiffCharsRange(4999),
       'InvalidMaxDiffChars',
       '--max-diff-chars must be between 5000',
@@ -66,8 +66,8 @@ describe('validateMaxDiffCharsRange', () => {
     expect(() => validateMaxDiffCharsRange(5_000_000)).not.toThrow();
   });
 
-  it('throws SfError above upper boundary (5_000_001)', () => {
-    assertSfError(() => validateMaxDiffCharsRange(5_000_001), 'InvalidMaxDiffChars', '5,000,000');
+  it('throws SgaiError above upper boundary (5_000_001)', () => {
+    assertSgaiError(() => validateMaxDiffCharsRange(5_000_001), 'InvalidMaxDiffChars', '5,000,000');
   });
 });
 
@@ -80,8 +80,8 @@ describe('validateContextLinesRange', () => {
     expect(() => validateContextLinesRange(0)).not.toThrow();
   });
 
-  it('throws SfError below lower boundary (-1)', () => {
-    assertSfError(
+  it('throws SgaiError below lower boundary (-1)', () => {
+    assertSgaiError(
       () => validateContextLinesRange(-1),
       'InvalidContextLines',
       '--context-lines must be an integer between 0',
@@ -92,12 +92,12 @@ describe('validateContextLinesRange', () => {
     expect(() => validateContextLinesRange(1000)).not.toThrow();
   });
 
-  it('throws SfError above upper boundary (1001)', () => {
-    assertSfError(() => validateContextLinesRange(1001), 'InvalidContextLines', '1000');
+  it('throws SgaiError above upper boundary (1001)', () => {
+    assertSgaiError(() => validateContextLinesRange(1001), 'InvalidContextLines', '1000');
   });
 
-  it('throws SfError for non-integer (1.5)', () => {
-    assertSfError(() => validateContextLinesRange(1.5), 'InvalidContextLines', '--context-lines must be an integer');
+  it('throws SgaiError for non-integer (1.5)', () => {
+    assertSgaiError(() => validateContextLinesRange(1.5), 'InvalidContextLines', '--context-lines must be an integer');
   });
 });
 
@@ -110,8 +110,8 @@ describe('validateMaxHunkLinesRange', () => {
     expect(() => validateMaxHunkLinesRange(1)).not.toThrow();
   });
 
-  it('throws SfError below lower boundary (0)', () => {
-    assertSfError(
+  it('throws SgaiError below lower boundary (0)', () => {
+    assertSgaiError(
       () => validateMaxHunkLinesRange(0),
       'InvalidMaxHunkLines',
       '--max-hunk-lines must be an integer between 1',
@@ -122,12 +122,12 @@ describe('validateMaxHunkLinesRange', () => {
     expect(() => validateMaxHunkLinesRange(100_000)).not.toThrow();
   });
 
-  it('throws SfError above upper boundary (100_001)', () => {
-    assertSfError(() => validateMaxHunkLinesRange(100_001), 'InvalidMaxHunkLines', '100,000');
+  it('throws SgaiError above upper boundary (100_001)', () => {
+    assertSgaiError(() => validateMaxHunkLinesRange(100_001), 'InvalidMaxHunkLines', '100,000');
   });
 
-  it('throws SfError for non-integer (1.5)', () => {
-    assertSfError(() => validateMaxHunkLinesRange(1.5), 'InvalidMaxHunkLines', '--max-hunk-lines must be an integer');
+  it('throws SgaiError for non-integer (1.5)', () => {
+    assertSgaiError(() => validateMaxHunkLinesRange(1.5), 'InvalidMaxHunkLines', '--max-hunk-lines must be an integer');
   });
 });
 
@@ -161,16 +161,16 @@ describe('getValidatedCommitMessageRegexLists', () => {
     expect(result.include).toEqual(['feat', 'fix']);
   });
 
-  it('throws SfError for invalid include regex', () => {
-    assertSfError(
+  it('throws SgaiError for invalid include regex', () => {
+    assertSgaiError(
       () => getValidatedCommitMessageRegexLists({ 'commit-message-include': ['[invalid'] }),
       'InvalidMessageInclude',
       'Invalid commit message include regular expression',
     );
   });
 
-  it('throws SfError for invalid exclude regex', () => {
-    assertSfError(
+  it('throws SgaiError for invalid exclude regex', () => {
+    assertSgaiError(
       () => getValidatedCommitMessageRegexLists({ 'commit-message-exclude': ['[invalid'] }),
       'InvalidMessageExclude',
       'Invalid commit message exclude regular expression',
@@ -195,24 +195,24 @@ describe('throwIfNoCommitsAfterMessageFilter', () => {
     expect(() => throwIfNoCommitsAfterMessageFilter([commit], [], [], [], 'error message')).not.toThrow();
   });
 
-  it('throws SfError with provided message when filtered result is empty due to include filter', () => {
-    assertSfError(
+  it('throws SgaiError with provided message when filtered result is empty due to include filter', () => {
+    assertSgaiError(
       () => throwIfNoCommitsAfterMessageFilter([commit], [], ['pattern'], [], 'no commits after filter'),
       'NoCommitsAfterFilter',
       'no commits after filter',
     );
   });
 
-  it('throws SfError when filtered result is empty due to exclude filter', () => {
-    assertSfError(
+  it('throws SgaiError when filtered result is empty due to exclude filter', () => {
+    assertSgaiError(
       () => throwIfNoCommitsAfterMessageFilter([commit], [], [], ['chore'], 'no commits after filter'),
       'NoCommitsAfterFilter',
       'no commits after filter',
     );
   });
 
-  it('throws SfError when filtered result is empty due to both include and exclude filters', () => {
-    assertSfError(
+  it('throws SgaiError when filtered result is empty due to both include and exclude filters', () => {
+    assertSgaiError(
       () => throwIfNoCommitsAfterMessageFilter([commit], [], ['feat'], ['chore'], 'no commits after filter'),
       'NoCommitsAfterFilter',
       'no commits after filter',
@@ -225,8 +225,8 @@ describe('validateCommitMessageRegexes', () => {
     expect(() => validateCommitMessageRegexes(['feat.*'], 'include')).not.toThrow();
   });
 
-  it('throws SfError for an invalid include regex', () => {
-    assertSfError(
+  it('throws SgaiError for an invalid include regex', () => {
+    assertSgaiError(
       () => validateCommitMessageRegexes(['[invalid'], 'include'),
       'InvalidMessageInclude',
       'Invalid commit message include regular expression',
@@ -237,8 +237,8 @@ describe('validateCommitMessageRegexes', () => {
     expect(() => validateCommitMessageRegexes(['chore.*'], 'exclude')).not.toThrow();
   });
 
-  it('throws SfError for an invalid exclude regex', () => {
-    assertSfError(
+  it('throws SgaiError for an invalid exclude regex', () => {
+    assertSgaiError(
       () => validateCommitMessageRegexes(['[invalid'], 'exclude'),
       'InvalidMessageExclude',
       'Invalid commit message exclude regular expression',
