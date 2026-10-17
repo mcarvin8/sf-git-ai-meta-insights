@@ -172,8 +172,10 @@ async function collectReferenceDocs(
 
   // Explicit URLs are required context: any retrieval failure stops before the LLM is called.
   const docs = await fetchReferenceDocs(referenceUrls, { charBudget: charBudget * referenceUrls.length });
-  for (const release of releases) {
-    const found = await fetchReleaseNotes(release, { charBudget });
+  // Release lookups can take tens of seconds each, so run them concurrently.
+  const releaseDocs = await Promise.all(releases.map((release) => fetchReleaseNotes(release, { charBudget })));
+  for (const [i, release] of releases.entries()) {
+    const found = releaseDocs[i];
     if (found.length === 0) {
       log(`Warning: no usable Salesforce ${release.name} release notes were retrieved; continuing without them.`);
     }

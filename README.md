@@ -432,7 +432,7 @@ Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://doc
 
 ### C) Explain changes with Salesforce release notes or other docs
 
-Give the model documentation to explain the diff with, so the summary can call out what a release changed and cite where it says so. Documentation is fetched with the anonymous [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) endpoint; it needs no account or API key for light use.
+Give the model documentation to explain the diff with, so the summary can call out what a release changed and cite where it says so. Documentation is fetched with the anonymous [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) endpoint; it needs no account or API key for light use. Anonymous use is rate limited, so for CI or frequent runs set `PARALLEL_API_KEY` (from [platform.parallel.ai](https://platform.parallel.ai)) and it is sent as a Bearer token.
 
 ```bash
 # Metadata API release notes for the project's sourceApiVersion
@@ -444,7 +444,7 @@ sf sgai metadata summarize --from v1.4.0 \
   --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
 ```
 
-- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). help.salesforce.com does not always return readable content to automated retrieval, so when no usable notes are found the command logs a warning and summarizes without them.
+- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). It tries the release's Metadata API page on help.salesforce.com, then the release notes PDF (used only when its content is for that release), then a search limited to that release's help pages. help.salesforce.com often returns only a cookie or status banner to automated retrieval, and some releases are not retrievable at all, so when no usable notes are found the command logs a warning and summarizes without them. Each release can take 20–40 seconds to look up; releases are looked up concurrently.
 - `--reference-url` is strict: if a URL cannot be retrieved, the command stops before calling the LLM rather than summarizing without the context you asked for.
 - Only the URLs (and, for release-notes fallback, a search query naming the release) go to Parallel. The diff goes only to your configured LLM provider. Use public URLs without credentials or private query parameters.
 - Excerpts are capped at 12,000 characters in total and are treated as untrusted reference material: the model is told to cite the URL for documentation-based claims and to separate documentation guidance from changes in the patch. With `--map-reduce`, documentation is added only to the final synthesis call. Review the output against the patch; this is a summary aid, not a compatibility check.

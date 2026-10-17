@@ -14,6 +14,8 @@ export type ReferenceDocsOptions = ParallelToolOptions & {
   charBudget?: number;
   /** Minimum excerpt characters for a page to count as usable. */
   minChars?: number;
+  /** Extra check on a page's full excerpt text (before truncation) for it to count as usable. */
+  acceptText?: (text: string) => boolean;
 };
 
 const REFERENCE_OBJECTIVE =
@@ -73,7 +75,7 @@ export async function fetchReferenceDocs(urls: string[], options: ReferenceDocsO
   const perDoc = Math.floor((options.charBudget ?? MAX_REFERENCE_CHARS) / urls.length);
   return urls.map((url) => {
     const page = (data?.results ?? []).find((result) => result.url === url);
-    const doc = page ? toReferenceDoc(page, perDoc, options.minChars) : undefined;
+    const doc = page ? toReferenceDoc(page, perDoc, options) : undefined;
     if (!doc) {
       throw new SfError(
         `No usable reference documentation was returned for ${url}. The page may require JavaScript or block automated retrieval.`,
@@ -82,6 +84,29 @@ export async function fetchReferenceDocs(urls: string[], options: ReferenceDocsO
     }
     return doc;
   });
+}
+
+/**
+ * Fetch several candidate URLs for the same document in one `web_fetch` call and return the one
+ * with the most usable text, or [] when none is usable. Never throws for empty or blocked pages,
+ * only for transport failures.
+ */
+export async function fetchBestReferenceDoc(
+  urls: string[],
+  options: ReferenceDocsOptions = {},
+): Promise<ReferenceDoc[]> {
+  const data = (await callParallelTool(
+    'web_fetch',
+    { urls, objective: REFERENCE_OBJECTIVE },
+    options,
+  )) as ParallelResults;
+  let best: ReferenceDoc | undefined;
+  for (const page of data?.results ?? []) {
+    if (typeof page.url !== 'string' || !urls.includes(page.url)) continue;
+    const doc = toReferenceDoc(page, options.charBudget ?? MAX_REFERENCE_CHARS, options);
+    if (doc && (!best || doc.excerpts.length > best.excerpts.length)) best = doc;
+  }
+  return best ? [best] : [];
 }
 
 /** Search with Parallel `web_search` and return the usable pages that pass `accept`. */
@@ -102,7 +127,7 @@ export async function searchReferenceDocs(
   for (const page of data?.results ?? []) {
     if (docs.length >= maxDocs) break;
     if (typeof page.url !== 'string' || !URL.canParse(page.url) || !accept(new URL(page.url))) continue;
-    const doc = toReferenceDoc(page, perDoc, options.minChars);
+    const doc = toReferenceDoc(page, perDoc, options);
     if (doc) docs.push(doc);
   }
   return docs;
@@ -111,7 +136,7 @@ export async function searchReferenceDocs(
 function toReferenceDoc(
   page: ParallelPage,
   maxChars: number,
-  minChars = MIN_USABLE_REFERENCE_CHARS,
+  { minChars = MIN_USABLE_REFERENCE_CHARS, acceptText }: ReferenceDocsOptions,
 ): ReferenceDoc | undefined {
   if (
     typeof page.url !== 'string' ||
@@ -121,7 +146,7 @@ function toReferenceDoc(
     return undefined;
   }
   const text = (page.excerpts as string[]).join('\n\n').trim();
-  if (text.length < minChars) return undefined;
+  if (text.length < minChars || (acceptText && !acceptText(text))) return undefined;
   return {
     url: page.url,
     ...(typeof page.title === 'string' && page.title.trim() ? { title: page.title.trim() } : {}),

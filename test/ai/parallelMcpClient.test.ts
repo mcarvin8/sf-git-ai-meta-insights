@@ -1,5 +1,5 @@
 import { SfError } from '@salesforce/core';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { callParallelTool, PARALLEL_MCP_ENDPOINT } from '../../src/ai/parallelMcpClient.js';
 import { mockParallelMcp, structured } from './parallelMcp.fixture.js';
@@ -44,7 +44,10 @@ describe('callParallelTool', () => {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
-      params: { name: 'web_fetch', arguments: { urls: ['https://example.com/doc'] } },
+      params: {
+        name: 'web_fetch',
+        arguments: { urls: ['https://example.com/doc'], session_id: expect.stringMatching(/^[0-9a-f-]{36}$/) },
+      },
     });
     expect(new Headers(close.init.headers).get('Mcp-Session-Id')).toBe('session-1');
   });
@@ -141,7 +144,64 @@ describe('callParallelTool', () => {
     const { fetchImpl } = mockParallelMcp(() => new Response('busy', { status: 429 }));
     const error = await callParallelTool('web_fetch', {}, { fetchImpl }).catch((e: unknown) => e);
     expect((error as SfError).name).toBe('ReferenceDocsRequestFailed');
-    expect((error as SfError).message).toBe('Parallel MCP request "tools/call" failed with HTTP 429.');
+    expect((error as SfError).message).toBe(
+      'Parallel MCP request "tools/call" failed with HTTP 429. Anonymous use is rate limited; set PARALLEL_API_KEY for higher limits.',
+    );
+
+    const other = mockParallelMcp(() => new Response('down', { status: 503 }));
+    await expect(callParallelTool('web_fetch', {}, { fetchImpl: other.fetchImpl })).rejects.toThrow(
+      /^Parallel MCP request "tools\/call" failed with HTTP 503\.$/,
+    );
+  });
+
+  it('omits the rate-limit hint when an API key is in use', async () => {
+    const { fetchImpl } = mockParallelMcp(() => new Response('busy', { status: 429 }));
+    await expect(callParallelTool('web_fetch', {}, { fetchImpl, apiKey: 'k' })).rejects.toThrow(
+      /^Parallel MCP request "tools\/call" failed with HTTP 429\.$/,
+    );
+  });
+
+  it('reuses one session_id across calls in a run', async () => {
+    const { fetchImpl, requests } = mockParallelMcp(() => structured({}));
+    await callParallelTool('web_fetch', {}, { fetchImpl });
+    await callParallelTool('web_search', {}, { fetchImpl });
+    const ids = requests
+      .filter((r) => r.body?.method === 'tools/call')
+      .map((r) => (r.body as { params: { arguments: { session_id: string } } }).params.arguments.session_id);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).toBe(ids[1]);
+  });
+
+  describe('API key', () => {
+    const original = process.env.PARALLEL_API_KEY;
+    afterEach(() => {
+      if (original === undefined) delete process.env.PARALLEL_API_KEY;
+      else process.env.PARALLEL_API_KEY = original;
+    });
+
+    it('sends PARALLEL_API_KEY as a Bearer token on every request', async () => {
+      process.env.PARALLEL_API_KEY = '  env-key  ';
+      const { fetchImpl, requests } = mockParallelMcp(() => structured({}));
+      await callParallelTool('web_fetch', {}, { fetchImpl });
+      expect(requests).toHaveLength(4);
+      for (const request of requests) {
+        expect(new Headers(request.init.headers).get('Authorization')).toBe('Bearer env-key');
+      }
+    });
+
+    it('prefers an explicit apiKey and stays anonymous when the key is blank', async () => {
+      process.env.PARALLEL_API_KEY = 'env-key';
+      const explicit = mockParallelMcp(() => structured({}));
+      await callParallelTool('web_fetch', {}, { fetchImpl: explicit.fetchImpl, apiKey: 'explicit' });
+      expect(new Headers(explicit.requests[0].init.headers).get('Authorization')).toBe('Bearer explicit');
+
+      process.env.PARALLEL_API_KEY = '   ';
+      const blank = mockParallelMcp(() => structured({}));
+      await callParallelTool('web_fetch', {}, { fetchImpl: blank.fetchImpl });
+      for (const request of blank.requests) {
+        expect(new Headers(request.init.headers).has('Authorization')).toBe(false);
+      }
+    });
   });
 
   it('propagates network failures', async () => {

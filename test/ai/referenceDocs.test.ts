@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildReferenceDocsModelProvider,
+  fetchBestReferenceDoc,
   fetchReferenceDocs,
   MAX_REFERENCE_CHARS,
   REFERENCE_DOCS_SYSTEM_SUFFIX,
@@ -73,7 +74,12 @@ describe('fetchReferenceDocs', () => {
 
     const docs = await fetchReferenceDocs([URL_A, URL_B], { fetchImpl });
 
-    expect(calls).toEqual([{ name: 'web_fetch', args: { urls: [URL_A, URL_B], objective: expect.any(String) } }]);
+    expect(calls).toEqual([
+      {
+        name: 'web_fetch',
+        args: { urls: [URL_A, URL_B], objective: expect.any(String), session_id: expect.any(String) },
+      },
+    ]);
     expect(docs).toEqual([
       { url: URL_A, excerpts: `${LONG_TEXT.slice(0, 150)}\n\n${LONG_TEXT.slice(0, 150)}`.trim(), truncated: false },
       { url: URL_B, title: 'B docs', excerpts: LONG_TEXT.trim(), truncated: false },
@@ -137,6 +143,57 @@ describe('fetchReferenceDocs', () => {
   });
 });
 
+describe('fetchBestReferenceDoc', () => {
+  it('fetches every candidate in one call and returns the one with the most usable text', async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const { fetchImpl } = mockParallelMcp((_name, args) => {
+      calls.push(args);
+      return structured({
+        results: [
+          { url: URL_A, excerpts: [LONG_TEXT.slice(0, 300)] },
+          { url: 'https://example.com/not-requested', excerpts: [LONG_TEXT] },
+          { url: URL_B, title: 'B', excerpts: [LONG_TEXT.slice(0, 900)] },
+          { url: 'https://example.com/c', excerpts: [LONG_TEXT.slice(0, 900)] },
+        ],
+        errors: [{ url: 'https://example.com/d', error_type: 'FETCH_ERROR' }],
+      });
+    });
+
+    const docs = await fetchBestReferenceDoc([URL_A, URL_B, 'https://example.com/c', 'https://example.com/d'], {
+      fetchImpl,
+    });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].urls).toEqual([URL_A, URL_B, 'https://example.com/c', 'https://example.com/d']);
+    expect(docs).toEqual([{ url: URL_B, title: 'B', excerpts: LONG_TEXT.slice(0, 900).trim(), truncated: false }]);
+  });
+
+  it('applies the budget, minimum, and acceptText check to the full text', async () => {
+    const text = `${'a'.repeat(600)} KEYWORD`;
+    const { fetchImpl } = mockParallelMcp(() => structured({ results: [{ url: URL_A, excerpts: [text] }] }));
+
+    const [doc] = await fetchBestReferenceDoc([URL_A], {
+      fetchImpl,
+      charBudget: 100,
+      acceptText: (t) => t.endsWith('KEYWORD'),
+    });
+    expect(doc).toEqual({ url: URL_A, excerpts: 'a'.repeat(100), truncated: true });
+
+    await expect(fetchBestReferenceDoc([URL_A], { fetchImpl, acceptText: () => false })).resolves.toEqual([]);
+    await expect(fetchBestReferenceDoc([URL_A], { fetchImpl, minChars: 1000 })).resolves.toEqual([]);
+  });
+
+  it('returns [] for empty or malformed payloads and rejects on transport failure', async () => {
+    for (const data of [{}, { results: [{ url: 7, excerpts: [LONG_TEXT] }] }]) {
+      const { fetchImpl } = mockParallelMcp(() => structured(data));
+      await expect(fetchBestReferenceDoc([URL_A], { fetchImpl })).resolves.toEqual([]);
+    }
+    await expect(
+      fetchBestReferenceDoc([URL_A], { fetchImpl: () => Promise.reject(new Error('offline')) }),
+    ).rejects.toThrow('offline');
+  });
+});
+
 describe('searchReferenceDocs', () => {
   it('sends the objective and queries to web_search and keeps accepted usable pages up to maxDocs', async () => {
     const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
@@ -160,7 +217,12 @@ describe('searchReferenceDocs', () => {
       charBudget: 1000,
     });
 
-    expect(calls).toEqual([{ name: 'web_search', args: { objective: 'objective', search_queries: ['q1', 'q2'] } }]);
+    expect(calls).toEqual([
+      {
+        name: 'web_search',
+        args: { objective: 'objective', search_queries: ['q1', 'q2'], session_id: expect.any(String) },
+      },
+    ]);
     expect(docs).toEqual([
       { url: 'https://docs.example/1', title: 'One', excerpts: LONG_TEXT.slice(0, 500), truncated: true },
       { url: 'https://docs.example/2', excerpts: LONG_TEXT.slice(0, 500), truncated: true },
