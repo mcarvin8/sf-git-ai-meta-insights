@@ -64,7 +64,8 @@ USAGE
   $ sf sgai metadata summarize -f <value> [--json] [--flags-dir <value>] [-t <value>] [-m <value>...] [-e <value>...] [-i
     <value>...] [-x <value>...] [--team <value>] [-p <value>] [--model <value>] [--max-diff-chars <value>]
     [--context-lines <value>] [--ignore-whitespace] [--strip-diff-preamble] [--max-hunk-lines <value>]
-    [--exclude-default-noise] [--map-reduce] [--redact-secrets] [--max-retries <value>] [-b]
+    [--exclude-default-noise] [--map-reduce] [--redact-secrets] [--max-retries <value>] [--reference-url <value>...]
+    [--release-notes] [-b]
 
 FLAGS
   -b, --merge-base                            Resolve `--from` as the merge base of `--to` and `--from`, instead of
@@ -87,6 +88,9 @@ FLAGS
       --max-retries=<value>                   Retry count for transient LLM call failures.
       --model=<value>                         Chat model id used for the summary.
       --redact-secrets                        Mask likely secrets/credentials in the diff before sending it to the LLM.
+      --reference-url=<value>...              Public documentation URL to fetch and give the model as reference context.
+      --release-notes                         Add the Salesforce Metadata API release notes for the project's
+                                              `sourceApiVersion` as reference context.
       --strip-diff-preamble                   Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy`
                                               lines from the unified diff.
       --team=<value>                          Optional team or squad label for the summary.
@@ -120,6 +124,10 @@ EXAMPLES
   $ sf sgai metadata summarize --from HEAD~1 --redact-secrets
 
   $ sf sgai metadata summarize --to develop --from main --merge-base
+
+  $ sf sgai metadata summarize --from origin/main --release-notes
+
+  $ sf sgai metadata summarize --from v1.4.0 --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
 
 FLAG DESCRIPTIONS
   -b, --merge-base  Resolve `--from` as the merge base of `--to` and `--from`, instead of using it directly.
@@ -228,6 +236,29 @@ FLAG DESCRIPTIONS
     Salesforce metadata that can carry secrets in Custom Settings, Named Credentials, or scratch org config. Defaults to
     false.
 
+  --reference-url=<value>...  Public documentation URL to fetch and give the model as reference context.
+
+    Fetches excerpts from each URL with the anonymous Parallel Search MCP endpoint (`https://search.parallel.ai/mcp`, no
+    account or API key needed; set `PARALLEL_API_KEY` for higher rate limits) and adds them to the summary prompt as
+    untrusted reference material. The model is asked to cite the URL for documentation-based claims and to distinguish
+    documentation guidance from changes in the patch. Use for release notes, migration guides, or package changelogs
+    that explain the change. Only the URL is sent to Parallel; the diff is only sent to your configured LLM provider.
+    Must be a public HTTPS URL without credentials or private query parameters. Retrieval failures stop the command
+    before the LLM is called. Excerpts are capped at 12,000 characters in total, shared with `--release-notes`.
+    Repeatable.
+
+  --release-notes
+
+    Add the Salesforce Metadata API release notes for the project's `sourceApiVersion` as reference context.
+
+    Reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from`, maps it to its Salesforce release (for
+    example `64.0` to Summer '25), and fetches the Metadata API section of those release notes through Parallel Search
+    MCP (see `--reference-url`), falling back to the release notes PDF (only when its content is for that release) and
+    then a search limited to that release's help pages. When the range upgrades `sourceApiVersion`, every release
+    upgraded through is included (at most the 3 most recent). help.salesforce.com does not always serve readable content
+    to automated retrieval, so when no usable release notes are found a warning is logged and the summary is generated
+    without them. Each release can take 20 to 40 seconds to look up. Defaults to false.
+
   --strip-diff-preamble
 
     Strip low-value `diff --git`/`index`/`mode`/`similarity`/`rename`/`copy` lines from the unified diff.
@@ -288,6 +319,8 @@ _See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8
 | `map-reduce`                   | Split oversized diffs into per-file batches instead of truncating.                             | No       | `false`                 |
 | `redact-secrets`                | Mask likely secrets/credentials in the diff before sending it to the LLM.                     | No       | `false`                 |
 | `max-retries`                   | Retry count for transient LLM call failures.                                                  | No       |                         |
+| `reference-url`                 | Public HTTPS documentation URLs, one per line, given to the model as cited reference context. See [C)](#c-explain-changes-with-salesforce-release-notes-or-other-docs). | No       |                         |
+| `release-notes`                 | Add the Salesforce Metadata API release notes for the project's `sourceApiVersion` as reference context. | No       | `false`                 |
 
 ### Outputs
 
@@ -299,6 +332,7 @@ _See code: [src/commands/sgai/metadata/summarize.ts](https://github.com/mcarvin8
 | `output-tokens`         | LLM output tokens consumed.                                 |
 | `cached-input-tokens`    | LLM cached input tokens consumed.                            |
 | `total-tokens`          | Total LLM tokens consumed.                                   |
+| `references`            | Newline-separated URLs of the reference documentation added to the prompt. |
 
 ### Example: deploy-summary comment on a PR
 
@@ -427,9 +461,28 @@ sf sgai metadata summarize --from origin/main --to origin/your-mr-branch --outpu
 
 Post the generated `mr-impact.md` as an MR note via the [GitLab API](https://docs.gitlab.com/ee/api/notes.html) or your preferred CI comment action.
 
+### C) Explain changes with Salesforce release notes or other docs
+
+Give the model documentation to explain the diff with, so the summary can call out what a release changed and cite where it says so. Documentation is fetched with the anonymous [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) endpoint; it needs no account or API key for light use. Anonymous use is rate limited, so for CI or frequent runs set `PARALLEL_API_KEY` (from [platform.parallel.ai](https://platform.parallel.ai)) and it is sent as a Bearer token.
+
+```bash
+# Metadata API release notes for the project's sourceApiVersion
+# (and every release the range upgraded through, up to 3)
+sf sgai metadata summarize --from origin/main --release-notes
+
+# Any public docs page, such as a migration guide or package changelog
+sf sgai metadata summarize --from v1.4.0 \
+  --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
+```
+
+- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). It tries the release's Metadata API page on help.salesforce.com, then the release notes PDF (used only when its content is for that release), then a search limited to that release's help pages. help.salesforce.com often returns only a cookie or status banner to automated retrieval, and some releases are not retrievable at all, so when no usable notes are found the command logs a warning and summarizes without them. Each release can take 20–40 seconds to look up; releases are looked up concurrently.
+- `--reference-url` is strict: if a URL cannot be retrieved, the command stops before calling the LLM rather than summarizing without the context you asked for.
+- Only the URLs (and, for release-notes fallback, a search query naming the release) go to Parallel. The diff goes only to your configured LLM provider. Use public URLs without credentials or private query parameters.
+- Excerpts are capped at 12,000 characters in total and are treated as untrusted reference material: the model is told to cite the URL for documentation-based claims and to separate documentation guidance from changes in the patch. With `--map-reduce`, documentation is added only to the final synthesis call. Review the output against the patch; this is a summary aid, not a compatibility check.
+
 ## How it works
 
-The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into AI generated markdown summaries.
+The plugin reads `packageDirectories` from `sfdx-project.json` to scope the diff, merges any CLI include/exclude paths, then sends the structured diff context to the configured model. Core logic is provided by [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff), a general-purpose library that turns git diffs into AI generated markdown summaries. When `--reference-url` or `--release-notes` is set, the resolved model is wrapped so its prompt also carries the retrieved documentation excerpts.
 
 After writing the summary file, the command logs LLM usage (request count, input/output/cached/total tokens) to help track model spend.
 

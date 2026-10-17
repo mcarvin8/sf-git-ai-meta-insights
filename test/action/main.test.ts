@@ -53,7 +53,7 @@ describe('GitHub Action entrypoint', () => {
         'redact-secrets': false,
       },
     );
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -87,7 +87,7 @@ describe('GitHub Action entrypoint', () => {
       'max-hunk-lines': '200',
       'max-retries': '3',
     });
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -107,7 +107,7 @@ describe('GitHub Action entrypoint', () => {
 
   it('passes through non-empty optional string inputs', async () => {
     stubInputs({ from: 'HEAD~1', to: 'HEAD', team: 'release-eng', model: 'claude-3-5-sonnet-latest' });
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -121,7 +121,7 @@ describe('GitHub Action entrypoint', () => {
 
   it('sets outputs and logs usage on success', async () => {
     stubInputs({ from: 'HEAD~1' });
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -131,6 +131,7 @@ describe('GitHub Action entrypoint', () => {
     expect(core.setOutput).toHaveBeenCalledWith('output-tokens', 50);
     expect(core.setOutput).toHaveBeenCalledWith('cached-input-tokens', 0);
     expect(core.setOutput).toHaveBeenCalledWith('total-tokens', 150);
+    expect(core.setOutput).toHaveBeenCalledWith('references', '');
     expect(core.setFailed).not.toHaveBeenCalled();
     expect(core.info).toHaveBeenCalledWith(
       'LLM usage: 1 request(s), 100 input tokens, 50 output tokens, 0 cached input tokens, 150 total tokens.',
@@ -139,7 +140,7 @@ describe('GitHub Action entrypoint', () => {
 
   it('requests "from" as a required input, and queries every other input by its exact name', async () => {
     stubInputs({ from: 'HEAD~1' });
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -162,11 +163,39 @@ describe('GitHub Action entrypoint', () => {
     expect(getBooleanInputMock).toHaveBeenCalledWith('exclude-default-noise');
     expect(getBooleanInputMock).toHaveBeenCalledWith('map-reduce');
     expect(getBooleanInputMock).toHaveBeenCalledWith('redact-secrets');
+    expect(getMultilineInputMock).toHaveBeenCalledWith('reference-url');
+    expect(getBooleanInputMock).toHaveBeenCalledWith('release-notes');
+  });
+
+  it('maps reference-url and release-notes inputs and sets the references output', async () => {
+    stubInputs(
+      { from: 'HEAD~1' },
+      { 'reference-url': ['  https://example.com/a  ', '', 'https://example.com/b'] },
+      { 'release-notes': true },
+    );
+    runMock.mockResolvedValue({
+      path: 'metadata-summary.md',
+      usage: baseUsage,
+      references: ['https://example.com/a', 'https://example.com/b'],
+    });
+
+    await run();
+
+    expect(runMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'reference-url': ['https://example.com/a', 'https://example.com/b'],
+        'release-notes': true,
+      }),
+      expect.any(String),
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(core.setOutput).toHaveBeenCalledWith('references', 'https://example.com/a\nhttps://example.com/b');
   });
 
   it('passes the literal no-package-directories error message through to runMetadataSummarize', async () => {
     stubInputs({ from: 'HEAD~1' });
-    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage });
+    runMock.mockResolvedValue({ path: 'metadata-summary.md', usage: baseUsage, references: [] });
 
     await run();
 
@@ -190,7 +219,7 @@ describe('GitHub Action entrypoint', () => {
         noCommitsAfterFilterError: (from: string, to: string, include: string, exclude: string) => string,
       ) => {
         capturedMessage = noCommitsAfterFilterError('HEAD~1', 'HEAD', '[]', '[]');
-        return { path: 'metadata-summary.md', usage: baseUsage };
+        return { path: 'metadata-summary.md', usage: baseUsage, references: [] };
       },
     );
 
@@ -207,7 +236,7 @@ describe('GitHub Action entrypoint', () => {
     runMock.mockImplementation(
       async (_options: unknown, _noPkg: string, _noCommits: unknown, log: (message: string) => void) => {
         log('Generated metadata summary at metadata-summary.md');
-        return { path: 'metadata-summary.md', usage: baseUsage };
+        return { path: 'metadata-summary.md', usage: baseUsage, references: [] };
       },
     );
 

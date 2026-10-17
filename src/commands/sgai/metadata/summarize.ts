@@ -128,6 +128,18 @@ export default class SgaiMetadataSummarize extends SfCommand<SgaiMetadataSummari
       description: messages.getMessage('flags.max-retries.description'),
       required: false,
     }),
+    'reference-url': Flags.string({
+      summary: messages.getMessage('flags.reference-url.summary'),
+      description: messages.getMessage('flags.reference-url.description'),
+      required: false,
+      multiple: true,
+    }),
+    'release-notes': Flags.boolean({
+      summary: messages.getMessage('flags.release-notes.summary'),
+      description: messages.getMessage('flags.release-notes.description'),
+      required: false,
+      default: false,
+    }),
     'merge-base': Flags.boolean({
       summary: messages.getMessage('flags.merge-base.summary'),
       description: messages.getMessage('flags.merge-base.description'),
