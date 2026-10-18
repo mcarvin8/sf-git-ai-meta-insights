@@ -252,12 +252,14 @@ FLAG DESCRIPTIONS
     Add the Salesforce Metadata API release notes for the project's `sourceApiVersion` as reference context.
 
     Reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from`, maps it to its Salesforce release (for
-    example `64.0` to Summer '25), and fetches the Metadata API section of those release notes through Parallel Search
-    MCP (see `--reference-url`), falling back to the release notes PDF (only when its content is for that release) and
-    then a search limited to that release's help pages. When the range upgrades `sourceApiVersion`, every release
-    upgraded through is included (at most the 3 most recent). help.salesforce.com does not always serve readable content
-    to automated retrieval, so when no usable release notes are found a warning is logged and the summary is generated
-    without them. Each release can take 20 to 40 seconds to look up. Defaults to false.
+    example `64.0` to Summer '25), and renders the Metadata API section of those release notes in a headless Chrome or
+    Chromium browser (through puppeteer-core), using it only when the page heading names that release. When the range
+    upgrades `sourceApiVersion`, every release upgraded through is included (at most the 3 most recent). The browser is
+    found from `PUPPETEER_EXECUTABLE_PATH` or `CHROME_PATH`, then a standard Chrome, Chromium, or Edge install, then the
+    Puppeteer cache (`PUPPETEER_CACHE_DIR`, default `~/.cache/puppeteer`); in CI containers without one, run `npx
+    @puppeteer/browsers install chrome-headless-shell@stable --path ~/.cache/puppeteer` first. Releases the browser
+    cannot render fall back to Parallel Search MCP (see `--reference-url`). When no usable release notes are found, a
+    warning is logged and the summary is generated without them. Defaults to false.
 
   --strip-diff-preamble
 
@@ -475,7 +477,14 @@ sf sgai metadata summarize --from v1.4.0 \
   --reference-url https://developer.salesforce.com/docs/platform/lwc/guide/release-notes.html
 ```
 
-- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). It tries the release's Metadata API page on help.salesforce.com, then the release notes PDF (used only when its content is for that release), then a search limited to that release's help pages. help.salesforce.com often returns only a cookie or status banner to automated retrieval, and some releases are not retrievable at all, so when no usable notes are found the command logs a warning and summarizes without them. Each release can take 20–40 seconds to look up; releases are looked up concurrently.
+- `--release-notes` reads `sourceApiVersion` from `sfdx-project.json` at `--to` and `--from` and maps it to its release (for example `64.0` to Summer '25). help.salesforce.com builds its articles with JavaScript, so the release's Metadata API page is rendered in a headless Chrome or Chromium browser through [puppeteer-core](https://pptr.dev). The page is used only when its release-notes heading names that release. Releases render concurrently in one browser, typically 10–25 seconds in total. Any release the browser cannot render falls back to Parallel, which often cannot read these pages. When no usable notes are found, the command logs a warning and summarizes without them.
+- **Browser:** no browser is downloaded when the plugin is installed. The command uses, in order: `PUPPETEER_EXECUTABLE_PATH` or `CHROME_PATH`; an installed Chrome, Chromium, or Edge in the standard location (GitHub-hosted runners and most developer machines have one); then a browser in the Puppeteer cache (`PUPPETEER_CACHE_DIR`, default `~/.cache/puppeteer`). In a CI container without a browser, add one setup step:
+
+  ```bash
+  npx @puppeteer/browsers install chrome-headless-shell@stable --path ~/.cache/puppeteer
+  ```
+
+  On Linux the browser is started with `--disable-dev-shm-usage`, and with `--no-sandbox` when running as root (the usual case in Docker). Slim images such as `node:22-slim` also need Chrome's system libraries; the [`ghcr.io/puppeteer/puppeteer`](https://pptr.dev/guides/docker) image includes them. Alpine is not supported by the downloaded browser.
 - `--reference-url` is strict: if a URL cannot be retrieved, the command stops before calling the LLM rather than summarizing without the context you asked for.
 - Only the URLs (and, for release-notes fallback, a search query naming the release) go to Parallel. The diff goes only to your configured LLM provider. Use public URLs without credentials or private query parameters.
 - Excerpts are capped at 12,000 characters in total and are treated as untrusted reference material: the model is told to cite the URL for documentation-based claims and to separate documentation guidance from changes in the patch. With `--map-reduce`, documentation is added only to the final synthesis call. Review the output against the patch; this is a summary aid, not a compatibility check.

@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('../../src/salesforce/releaseNotesBrowser.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/salesforce/releaseNotesBrowser.js')>()),
+  findBrowserExecutable: vi.fn(async () => '/usr/bin/chromium'),
+  renderReleaseNotes: vi.fn(async (releases: Array<{ url: string }>) =>
+    releases.map((r) => [{ url: r.url, excerpts: 'default render', truncated: false }]),
+  ),
+}));
+
 import {
   fetchReleaseNotes,
-  highestApiVersionMentioned,
+  fetchReleaseNotesForReleases,
   MAX_RELEASE_NOTE_RELEASES,
   MIN_RELEASE_NOTE_CHARS,
   parseSourceApiVersion,
@@ -27,7 +35,6 @@ describe('salesforceReleaseForApiVersion', () => {
     [66, 260, "Spring '26"],
   ])('maps API %i to release %i (%s)', (apiVersion, release, name) => {
     const page = 'https://help.salesforce.com/s/articleView?id=release-notes.rn_api_meta.htm';
-    const pdfName = name.replace(" '", '').toLowerCase();
     expect(salesforceReleaseForApiVersion(apiVersion)).toEqual({
       apiVersion,
       release,
@@ -38,24 +45,7 @@ describe('salesforceReleaseForApiVersion', () => {
         `${page}&language=en&release=${release}&type=5`,
         `${page}&release=${release}&type=5`,
       ],
-      pdfUrl: `https://resources.docs.salesforce.com/rel1/doc/en-us/static/pdf/salesforce_${pdfName}_release_notes.pdf`,
     });
-  });
-});
-
-describe('highestApiVersionMentioned', () => {
-  it('returns the highest API version named in the text', () => {
-    expect(
-      highestApiVersionMentioned(
-        'Available in API versions 63.0 and later. Introduced in API version 66.0. API version 65.0 too.',
-      ),
-    ).toBe(66);
-    expect(highestApiVersionMentioned('Introduced in API version 100.0')).toBe(100);
-  });
-
-  it('returns undefined when no API version is named', () => {
-    expect(highestApiVersionMentioned('No versions here, API 66, version 66.0, API version 6.0')).toBeUndefined();
-    expect(highestApiVersionMentioned('API version 66.05')).toBeUndefined();
   });
 });
 
@@ -156,26 +146,7 @@ describe('fetchReleaseNotes', () => {
   it('rejects page text that never mentions metadata', async () => {
     const { calls, fetchImpl } = parallel({ [release.url]: 'Cookie Consent Manager. '.repeat(60) });
     await expect(fetchReleaseNotes(release, { fetchImpl })).resolves.toEqual([]);
-    expect(calls.map((c) => c.name)).toEqual(['web_fetch', 'web_fetch', 'web_search']);
-  });
-
-  it('falls back to the PDF when it describes this release', async () => {
-    const { calls, fetchImpl } = parallel({ [release.url]: banner, [release.pdfUrl]: usable });
-
-    const docs = await fetchReleaseNotes(release, { fetchImpl });
-
-    expect(calls.map((c) => c.args.urls)).toEqual([release.urlVariants, [release.pdfUrl]]);
-    expect(docs.map((d) => d.url)).toEqual([release.pdfUrl]);
-  });
-
-  it.each([
-    ['a newer release', `${usable} Introduced in API version 65.0.`],
-    ['no API version', 'New and changed metadata types. '.repeat(40)],
-    ['no metadata mention', 'Introduced in API version 64.0. '.repeat(40)],
-  ])('rejects a PDF that describes %s', async (_label, pdfText) => {
-    const { calls, fetchImpl } = parallel({ [release.pdfUrl]: pdfText });
-    await expect(fetchReleaseNotes(release, { fetchImpl })).resolves.toEqual([]);
-    expect(calls.map((c) => c.name)).toEqual(['web_fetch', 'web_fetch', 'web_search']);
+    expect(calls.map((c) => c.name)).toEqual(['web_fetch', 'web_search']);
   });
 
   it('falls back to a search restricted to this release on help.salesforce.com', async () => {
@@ -192,7 +163,7 @@ describe('fetchReleaseNotes', () => {
     const docs = await fetchReleaseNotes(release, { fetchImpl });
 
     expect(docs.map((d) => d.url)).toEqual([searchMatch]);
-    expect(calls[2]).toEqual({
+    expect(calls[1]).toEqual({
       name: 'web_search',
       args: {
         objective:
@@ -209,9 +180,7 @@ describe('fetchReleaseNotes', () => {
   it('applies the release-note minimum to every source', async () => {
     const short = `metadata ${'x'.repeat(MIN_RELEASE_NOTE_CHARS - 30)} API version 64.0`;
     expect(short.length).toBeLessThan(MIN_RELEASE_NOTE_CHARS);
-    const { fetchImpl } = parallel({ [release.url]: short, [release.pdfUrl]: short }, [
-      { url: searchMatch, text: short },
-    ]);
+    const { fetchImpl } = parallel({ [release.url]: short }, [{ url: searchMatch, text: short }]);
     await expect(fetchReleaseNotes(release, { fetchImpl })).resolves.toEqual([]);
   });
 
@@ -226,7 +195,7 @@ describe('fetchReleaseNotes', () => {
     const { fetchImpl: base } = parallel({}, [{ url: searchMatch, text: usable }]);
     const flaky = async (url: string, init: RequestInit) => {
       const body = typeof init.body === 'string' ? JSON.parse(init.body) : {};
-      if (body.method === 'tools/call' && ++attempt <= 2) return new Response('busy', { status: 429 });
+      if (body.method === 'tools/call' && ++attempt <= 1) return new Response('busy', { status: 429 });
       return base(url, init);
     };
     await expect(fetchReleaseNotes(release, { fetchImpl: flaky })).resolves.toHaveLength(1);
@@ -234,5 +203,95 @@ describe('fetchReleaseNotes', () => {
     await expect(
       fetchReleaseNotes(release, { fetchImpl: () => Promise.reject(new Error('offline')) }),
     ).resolves.toEqual([]);
+  });
+});
+
+describe('fetchReleaseNotesForReleases', () => {
+  const releases = [salesforceReleaseForApiVersion(64), salesforceReleaseForApiVersion(65)];
+  const rendered = (url: string) => [{ url, excerpts: 'rendered', truncated: false }];
+  const viaParallel = (url: string) => [{ url, excerpts: 'parallel', truncated: false }];
+
+  it('does nothing for no releases', async () => {
+    const findBrowser = vi.fn();
+    await expect(fetchReleaseNotesForReleases([], { charBudget: 100, log: vi.fn() }, { findBrowser })).resolves.toEqual(
+      [],
+    );
+    expect(findBrowser).not.toHaveBeenCalled();
+  });
+
+  it('renders with the browser and uses Parallel only for releases it could not render', async () => {
+    const render = vi.fn(async () => [rendered(releases[0].url), []]);
+    const fetchViaParallel = vi.fn(async (release: { url: string }) => viaParallel(release.url));
+    const log = vi.fn();
+
+    const docs = await fetchReleaseNotesForReleases(
+      releases,
+      { charBudget: 500, log },
+      { findBrowser: async () => '/usr/bin/chromium', render, fetchViaParallel },
+    );
+
+    expect(render).toHaveBeenCalledWith(releases, {
+      executablePath: '/usr/bin/chromium',
+      charBudget: 500,
+      minChars: MIN_RELEASE_NOTE_CHARS,
+    });
+    expect(fetchViaParallel).toHaveBeenCalledTimes(1);
+    expect(fetchViaParallel).toHaveBeenCalledWith(releases[1], { charBudget: 500 });
+    expect(docs).toEqual([rendered(releases[0].url), viaParallel(releases[1].url)]);
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('falls back to Parallel with an install hint when no browser is found', async () => {
+    const render = vi.fn();
+    const fetchViaParallel = vi.fn(async (release: { url: string }) => viaParallel(release.url));
+    const log = vi.fn();
+
+    const docs = await fetchReleaseNotesForReleases(
+      releases,
+      { charBudget: 500, log },
+      { findBrowser: async () => undefined, render, fetchViaParallel },
+    );
+
+    expect(render).not.toHaveBeenCalled();
+    expect(docs).toEqual(releases.map((r) => viaParallel(r.url)));
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0][0]).toContain('no Chrome or Chromium browser found');
+    expect(log.mock.calls[0][0]).toContain(
+      '`npx @puppeteer/browsers install chrome-headless-shell@stable --path ~/.cache/puppeteer`',
+    );
+    expect(log.mock.calls[0][0]).toContain('PUPPETEER_EXECUTABLE_PATH');
+  });
+
+  it('falls back to Parallel with a warning when the browser cannot start', async () => {
+    const fetchViaParallel = vi.fn(async (release: { url: string }) => viaParallel(release.url));
+    const log = vi.fn();
+
+    const docs = await fetchReleaseNotesForReleases(
+      releases,
+      { charBudget: 500, log },
+      {
+        findBrowser: async () => '/opt/chrome',
+        render: async () => Promise.reject(new Error('missing libnss3')),
+        fetchViaParallel,
+      },
+    );
+
+    expect(docs).toEqual(releases.map((r) => viaParallel(r.url)));
+    expect(log).toHaveBeenCalledWith(
+      'Warning: could not start the browser at /opt/chrome to render release notes (missing libnss3); using Parallel instead.',
+    );
+
+    log.mockClear();
+    await fetchReleaseNotesForReleases(
+      releases,
+      { charBudget: 500, log },
+      { findBrowser: async () => '/opt/chrome', render: async () => Promise.reject('boom'), fetchViaParallel },
+    );
+    expect(log.mock.calls[0][0]).toContain('(boom)');
+  });
+
+  it('uses the real browser lookup and renderer by default', async () => {
+    const docs = await fetchReleaseNotesForReleases(releases, { charBudget: 300, log: vi.fn() });
+    expect(docs).toEqual(releases.map((r) => [{ url: r.url, excerpts: 'default render', truncated: false }]));
   });
 });

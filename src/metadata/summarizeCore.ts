@@ -23,7 +23,7 @@ import { SALESFORCE_METADATA_SYSTEM_PROMPT } from '../ai/salesforceMetadataPromp
 import { SgaiError } from '../errors.js';
 import { resolveMetadataSummaryTeam } from '../salesforce/metadataSummaryContext.js';
 import {
-  fetchReleaseNotes,
+  fetchReleaseNotesForReleases,
   readSourceApiVersionAt,
   releaseNoteApiVersions,
   salesforceReleaseForApiVersion,
@@ -172,8 +172,8 @@ async function collectReferenceDocs(
 
   // Explicit URLs are required context: any retrieval failure stops before the LLM is called.
   const docs = await fetchReferenceDocs(referenceUrls, { charBudget: charBudget * referenceUrls.length });
-  // Release lookups can take tens of seconds each, so run them concurrently.
-  const releaseDocs = await Promise.all(releases.map((release) => fetchReleaseNotes(release, { charBudget })));
+  // One headless browser renders every release concurrently; failures fall back to Parallel.
+  const releaseDocs = await fetchReleaseNotesForReleases(releases, { charBudget, log });
   for (const [i, release] of releases.entries()) {
     const found = releaseDocs[i];
     if (found.length === 0) {

@@ -23,7 +23,7 @@ vi.mock('../../src/ai/referenceDocs.js', async (importOriginal) => {
 
 vi.mock('../../src/salesforce/releaseNotes.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/salesforce/releaseNotes.js')>();
-  return { ...actual, fetchReleaseNotes: vi.fn(), readSourceApiVersionAt: vi.fn() };
+  return { ...actual, fetchReleaseNotesForReleases: vi.fn(), readSourceApiVersionAt: vi.fn() };
 });
 
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -48,7 +48,7 @@ import {
 import { fetchReferenceDocs, MAX_REFERENCE_CHARS, REFERENCE_DOCS_SYSTEM_SUFFIX } from '../../src/ai/referenceDocs.js';
 import { runMetadataSummarize, type SummarizeOptions } from '../../src/metadata/summarizeCore.js';
 import {
-  fetchReleaseNotes,
+  fetchReleaseNotesForReleases,
   readSourceApiVersionAt,
   salesforceReleaseForApiVersion,
 } from '../../src/salesforce/releaseNotes.js';
@@ -253,7 +253,7 @@ describe('runMetadataSummarize', () => {
     beforeEach(() => {
       vi.mocked(resolveLanguageModel).mockResolvedValue({ generate });
       vi.mocked(fetchReferenceDocs).mockResolvedValue([]);
-      vi.mocked(fetchReleaseNotes).mockResolvedValue([]);
+      vi.mocked(fetchReleaseNotesForReleases).mockImplementation(async (releases) => releases.map(() => []));
       vi.mocked(readSourceApiVersionAt).mockResolvedValue(undefined);
     });
 
@@ -317,8 +317,10 @@ describe('runMetadataSummarize', () => {
     it('adds release notes for upgraded API versions and shares the budget with explicit URLs', async () => {
       vi.mocked(readSourceApiVersionAt).mockImplementation(async (_git, rev) => (rev === 'def456' ? 65 : 63));
       vi.mocked(fetchReferenceDocs).mockResolvedValue([DOC_A]);
-      vi.mocked(fetchReleaseNotes).mockImplementation(async (release) =>
-        release.apiVersion === 64 ? [DOC_A, { ...DOC_B, url: 'https://help.salesforce.com/64' }] : [],
+      vi.mocked(fetchReleaseNotesForReleases).mockImplementation(async (releases) =>
+        releases.map((release) =>
+          release.apiVersion === 64 ? [DOC_A, { ...DOC_B, url: 'https://help.salesforce.com/64' }] : [],
+        ),
       );
       const log = vi.fn();
 
@@ -333,8 +335,10 @@ describe('runMetadataSummarize', () => {
       expect(readSourceApiVersionAt).toHaveBeenCalledWith(expect.anything(), 'abc123');
       const budget = Math.floor(MAX_REFERENCE_CHARS / 3);
       expect(fetchReferenceDocs).toHaveBeenCalledWith([DOC_A.url], { charBudget: budget });
-      expect(fetchReleaseNotes).toHaveBeenCalledWith(salesforceReleaseForApiVersion(64), { charBudget: budget });
-      expect(fetchReleaseNotes).toHaveBeenCalledWith(salesforceReleaseForApiVersion(65), { charBudget: budget });
+      expect(fetchReleaseNotesForReleases).toHaveBeenCalledWith(
+        [salesforceReleaseForApiVersion(64), salesforceReleaseForApiVersion(65)],
+        { charBudget: budget, log },
+      );
       expect(result.references).toEqual([DOC_A.url, 'https://help.salesforce.com/64']);
       expect(log).toHaveBeenCalledWith(
         "Warning: no usable Salesforce Winter '26 release notes were retrieved; continuing without them.",
@@ -352,8 +356,9 @@ describe('runMetadataSummarize', () => {
       );
       expect(readSourceApiVersionAt).toHaveBeenCalledWith(expect.anything(), 'HEAD');
       expect(readSourceApiVersionAt).toHaveBeenCalledWith(expect.anything(), 'merge-base-sha');
-      expect(fetchReleaseNotes).toHaveBeenCalledWith(salesforceReleaseForApiVersion(64), {
+      expect(fetchReleaseNotesForReleases).toHaveBeenCalledWith([salesforceReleaseForApiVersion(64)], {
         charBudget: MAX_REFERENCE_CHARS,
+        log: expect.any(Function),
       });
     });
 
@@ -363,7 +368,7 @@ describe('runMetadataSummarize', () => {
       expect(log).toHaveBeenCalledWith(
         'Warning: no sourceApiVersion found in sfdx-project.json at HEAD; skipping release notes.',
       );
-      expect(fetchReleaseNotes).not.toHaveBeenCalled();
+      expect(fetchReleaseNotesForReleases).not.toHaveBeenCalled();
       expect(fetchReferenceDocs).not.toHaveBeenCalled();
       expect(resolveLanguageModel).not.toHaveBeenCalled();
       expect(result.references).toEqual([]);
