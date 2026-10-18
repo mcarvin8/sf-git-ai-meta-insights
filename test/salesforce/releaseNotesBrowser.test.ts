@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 const puppeteerMocks = vi.hoisted(() => ({
@@ -124,6 +125,30 @@ describe('findBrowserExecutable', () => {
         installedInCache: async () => Promise.reject(new Error('corrupt cache')),
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it('defaults to process.env and the real file system', async () => {
+    // This test file exists, so it stands in for a browser executable named by the environment.
+    const executable = fileURLToPath(import.meta.url);
+    vi.stubEnv('PUPPETEER_EXECUTABLE_PATH', executable);
+    try {
+      await expect(findBrowserExecutable({ installedInCache: async () => [] })).resolves.toBe(executable);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('defaults to the current platform for standard install paths', async () => {
+    const checked: string[] = [];
+    await findBrowserExecutable({
+      env: {},
+      exists: (path) => {
+        checked.push(path);
+        return false;
+      },
+      installedInCache: async () => [],
+    });
+    expect(checked).toEqual(standardBrowserPaths(process.platform, {}));
   });
 
   it('reads an empty Puppeteer cache directory without error', async () => {
