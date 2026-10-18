@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { callParallelTool, PARALLEL_MCP_ENDPOINT } from '../../src/ai/parallelMcpClient.js';
 import { SgaiError } from '../../src/errors.js';
@@ -210,6 +210,32 @@ describe('callParallelTool', () => {
         expect(new Headers(request.init.headers).has('Authorization')).toBe(false);
       }
     });
+  });
+
+  it('uses the global fetch when no fetchImpl is given', async () => {
+    const { fetchImpl, requests } = mockParallelMcp(() => structured({ global: true }));
+    vi.stubGlobal('fetch', fetchImpl);
+    try {
+      await expect(callParallelTool('web_fetch', {})).resolves.toEqual({ global: true });
+      expect(requests.map((r) => r.body?.method ?? r.init.method)).toEqual([
+        'initialize',
+        'notifications/initialized',
+        'tools/call',
+        'DELETE',
+      ]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('reads a response without a Content-Type header as JSON', async () => {
+    const { fetchImpl } = mockParallelMcp(() => {
+      const response = new Response(JSON.stringify({ jsonrpc: '2.0', id: 2, result: structured({ bare: true }) }));
+      response.headers.delete('Content-Type');
+      expect(response.headers.has('Content-Type')).toBe(false);
+      return response;
+    });
+    await expect(callParallelTool('web_fetch', {}, { fetchImpl })).resolves.toEqual({ bare: true });
   });
 
   it('propagates network failures', async () => {
