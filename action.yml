@@ -1,7 +1,6 @@
-name: 'Salesforce Metadata AI Insights'
+name: 'Salesforce Metadata Change Summary (AI)'
 description: >-
-  Generate an AI-written Markdown summary of Salesforce metadata changes
-  between two Git refs.
+  AI-written Markdown summaries of Salesforce metadata changes for PR reviews, deployment audits, and release notes.
 author: 'Matt Carvin'
 branding:
   icon: 'cloud'
