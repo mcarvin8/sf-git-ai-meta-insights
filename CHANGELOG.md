@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.5.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.4.0...v5.5.0) (2026-10-17)
+
+
+### Features
+
+* add reference documentation context via Parallel Search MCP ([#70](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/70)) ([32c6390](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/32c6390e836ef68d8d405ffebbd9b1bac4c18a80))
+
+
+### Bug Fixes
+
+* **action:** remove @salesforce/core from everything the Action bundles ([#72](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/72)) ([7c199f4](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/7c199f4139b3db27b6f6c86755a745a47c32781d))
+
 ## [5.4.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.3.0...v5.4.0) (2026-09-11)
 
 
