@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.5.0...v5.6.0) (2026-10-18)
+
+
+### Features
+
+* render Salesforce release notes with puppeteer-core ([#73](https://github.com/mcarvin8/sf-git-ai-meta-insights/issues/73)) ([d7b4b8c](https://github.com/mcarvin8/sf-git-ai-meta-insights/commit/d7b4b8cc545eb149e88b31ac52205e683808a63f))
+
 ## [5.5.0](https://github.com/mcarvin8/sf-git-ai-meta-insights/compare/v5.4.0...v5.5.0) (2026-10-17)
 
 
