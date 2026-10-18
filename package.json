@@ -1,6 +1,6 @@
 {
   "name": "sf-git-ai-meta-insights",
-  "description": "Generate AI-written Markdown summaries of Salesforce metadata changes between git refs.",
+  "description": "AI-written Markdown summaries of Salesforce metadata changes between git refs, for PR reviews, deployment audits, and release notes, with optional Salesforce Release Notes context.",
   "version": "5.6.0",
   "dependencies": {
     "@mcarvin/smart-diff": "6.4.0",
@@ -68,6 +68,11 @@
     "cicd",
     "devops",
     "release-notes",
+    "salesforce-release-notes",
+    "pull-request",
+    "code-review",
+    "deployment",
+    "audit",
     "markdown"
   ],
   "license": "MIT",

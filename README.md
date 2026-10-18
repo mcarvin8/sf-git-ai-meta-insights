@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights/graph/badge.svg?token=N5FKE0JPHN)](https://codecov.io/gh/mcarvin8/sf-git-ai-meta-insights)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsf-git-ai-meta-insights%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/sf-git-ai-meta-insights/main)
 
-Generates AI-written Markdown summaries of Salesforce metadata changes between two Git refs. Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway. Available as a **Salesforce CLI plugin** and as a **native GitHub Action** for GitHub Actions users who want to skip installing the CLI.
+Generates AI-written Markdown summaries of Salesforce metadata changes between two Git refs, for PR reviews, deployment audits, and release notes. It can also add the matching Salesforce Release Notes as cited context ([use case C](#c-explain-changes-with-salesforce-release-notes-or-other-docs)). Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and any OpenAI-compatible gateway. Available as a **Salesforce CLI plugin** and as a **native GitHub Action** for GitHub Actions users who want to skip installing the CLI.
 
 <!-- TABLE OF CONTENTS -->
 <details>
