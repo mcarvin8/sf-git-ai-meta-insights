@@ -4,6 +4,7 @@ import {
   type ReferenceDocsOptions,
   searchReferenceDocs,
 } from '../ai/referenceDocs.js';
+import { BROWSER_INSTALL_HINT, findBrowserExecutable, renderReleaseNotes } from './releaseNotesBrowser.js';
 import type { GitClient } from './sfdxPackagePaths.js';
 
 /** At most this many releases are looked up when `sourceApiVersion` jumps across several releases. */
@@ -30,8 +31,6 @@ export type SalesforceRelease = {
    * only a cookie banner, so asking for all of them in one call markedly improves the hit rate.
    */
   urlVariants: string[];
-  /** Full release notes PDF. Large, and not published for every release. */
-  pdfUrl: string;
 };
 
 /** Map a major API version to its Salesforce release (API 60.0 = Spring '24 = release 248). */
@@ -47,7 +46,6 @@ export function salesforceReleaseForApiVersion(apiVersion: number): SalesforceRe
     name: `${season} '${year}`,
     url: urlFor('&language=en_US'),
     urlVariants: [urlFor('&language=en_US'), urlFor('&language=en'), urlFor('')],
-    pdfUrl: `https://resources.docs.salesforce.com/rel1/doc/en-us/static/pdf/salesforce_${season.toLowerCase()}${year}_release_notes.pdf`,
   };
 }
 
@@ -91,22 +89,10 @@ export function releaseNoteApiVersions(fromVersion: number | undefined, toVersio
 const mentionsMetadata = (text: string): boolean => /metadata/i.test(text);
 
 /**
- * Release notes mention older API versions ("available in API versions 63.0 and later") but never
- * newer ones, so the highest version mentioned identifies which release a document describes.
- */
-export function highestApiVersionMentioned(text: string): number | undefined {
-  const versions = [...text.matchAll(/API versions? (\d{2,3})\.0\b/g)].map((m) => Number.parseInt(m[1], 10));
-  return versions.length > 0 ? Math.max(...versions) : undefined;
-}
-
-/**
- * Retrieve Metadata API release notes for one release, trying in order:
- * 1. every spelling of the release's Metadata API page, in one `web_fetch` call;
- * 2. the release notes PDF, accepted only when the highest API version its text mentions is this
- *    release's, because the PDF path can serve a different release's notes;
- * 3. a search restricted to help.salesforce.com pages carrying this release number.
- * help.salesforce.com often serves only a cookie banner or JavaScript shell to automated retrieval,
- * so this returns [] when nothing usable is found and a flaky docs site never blocks the summary.
+ * Retrieve Metadata API release notes for one release through Parallel, trying every spelling of
+ * the release's page in one `web_fetch` call, then a search restricted to help.salesforce.com pages
+ * carrying this release number. Parallel often returns only a cookie banner for these JavaScript
+ * pages, so this is the fallback when no browser is available. Returns [] when nothing is usable.
  */
 export async function fetchReleaseNotes(
   release: SalesforceRelease,
@@ -115,11 +101,6 @@ export async function fetchReleaseNotes(
   const docsOptions = { minChars: MIN_RELEASE_NOTE_CHARS, acceptText: mentionsMetadata, ...options };
   const attempts: Array<() => Promise<ReferenceDoc[]>> = [
     () => fetchBestReferenceDoc(release.urlVariants, docsOptions),
-    () =>
-      fetchBestReferenceDoc([release.pdfUrl], {
-        ...docsOptions,
-        acceptText: (text) => mentionsMetadata(text) && highestApiVersionMentioned(text) === release.apiVersion,
-      }),
     () =>
       searchReferenceDocs(
         `Salesforce ${release.name} Release Notes (API version ${release.apiVersion}.0): new, changed, and deprecated Metadata API types and fields`,
@@ -143,4 +124,49 @@ export async function fetchReleaseNotes(
     }
   }
   return [];
+}
+
+export type ReleaseNotesDeps = {
+  findBrowser?: typeof findBrowserExecutable;
+  render?: typeof renderReleaseNotes;
+  fetchViaParallel?: typeof fetchReleaseNotes;
+};
+
+/**
+ * Retrieve release notes for several releases. help.salesforce.com renders its articles with
+ * JavaScript, so a headless Chromium browser (through puppeteer-core) is the reliable source; any
+ * release it cannot render falls back to Parallel. Without a browser, every release uses Parallel
+ * and a warning explains how to install one.
+ */
+export async function fetchReleaseNotesForReleases(
+  releases: SalesforceRelease[],
+  options: { charBudget: number; log: (message: string) => void },
+  deps: ReleaseNotesDeps = {},
+): Promise<ReferenceDoc[][]> {
+  if (releases.length === 0) return [];
+  const fetchViaParallel = deps.fetchViaParallel ?? fetchReleaseNotes;
+  const executablePath = await (deps.findBrowser ?? findBrowserExecutable)();
+  let rendered: ReferenceDoc[][] = releases.map(() => []);
+  if (executablePath) {
+    try {
+      rendered = await (deps.render ?? renderReleaseNotes)(releases, {
+        executablePath,
+        charBudget: options.charBudget,
+        minChars: MIN_RELEASE_NOTE_CHARS,
+      });
+    } catch (err) {
+      options.log(
+        `Warning: could not start the browser at ${executablePath} to render release notes (${err instanceof Error ? err.message : String(err)}); using Parallel instead.`,
+      );
+    }
+  } else {
+    options.log(
+      `Warning: no Chrome or Chromium browser found to render Salesforce release notes, so they are fetched through Parallel, which often cannot read them. Install one with \`${BROWSER_INSTALL_HINT}\` or set PUPPETEER_EXECUTABLE_PATH.`,
+    );
+  }
+  return Promise.all(
+    releases.map((release, i) =>
+      rendered[i]?.length ? rendered[i] : fetchViaParallel(release, { charBudget: options.charBudget }),
+    ),
+  );
 }

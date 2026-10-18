@@ -80,7 +80,9 @@ inputs:
   release-notes:
     description: >-
       Add the Salesforce Metadata API release notes for the `sourceApiVersion` in `sfdx-project.json`
-      as reference context. Skipped with a warning when no usable release notes are retrieved.
+      as reference context. Rendered with the Chrome preinstalled on GitHub-hosted runners (set
+      `PUPPETEER_EXECUTABLE_PATH` on self-hosted runners). Skipped with a warning when no usable
+      release notes are retrieved.
     required: false
     default: 'false'
 
