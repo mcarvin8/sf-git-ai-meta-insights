@@ -1,7 +1,7 @@
 {
   "name": "sf-git-ai-meta-insights",
   "description": "AI-written Markdown summaries of Salesforce metadata changes between git refs, for PR reviews, deployment audits, and release notes, with optional Salesforce Release Notes context.",
-  "version": "5.6.0",
+  "version": "5.7.0",
   "dependencies": {
     "@mcarvin/smart-diff": "6.4.1",
     "@oclif/core": "5.1.11",
