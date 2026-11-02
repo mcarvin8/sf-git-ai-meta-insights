@@ -101,7 +101,7 @@
     "clean": "wireit",
     "clean:build": "wireit",
     "clean:package-manager": "wireit",
-    "dependencies:upgrade": "npx npm-check-updates -u && npm install && npm audit fix && cd docker && npx npm-check-updates -u",
+    "dependencies:upgrade": "npx npm-check-updates -u && npm install && npm audit fix",
     "compile": "wireit",
     "format": "wireit",
     "lint": "wireit",
