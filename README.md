@@ -16,6 +16,7 @@ Generates AI-written Markdown summaries of Salesforce metadata changes between t
   - [Salesforce CLI](#salesforce-cli)
   - [GitHub Action](#github-action)
   - [Provider configuration](#provider-configuration)
+  - [Using a local coding agent (no API key)](#using-a-local-coding-agent-no-api-key)
   - [Use cases](#use-cases)
   - [How it works](#how-it-works)
   - [License](#license)
@@ -411,6 +412,12 @@ $env:LLM_BASE_URL = "https://llm-gateway.mycompany.example/v1"
 $env:LLM_DEFAULT_HEADERS = '{"Authorization":"Bearer <token>","x-tenant-id":"salesforce"}'
 sf sgai metadata summarize --from HEAD~1 --to HEAD
 ```
+
+## Using a local coding agent (no API key)
+
+If you'd rather have your coding agent (Claude Code, GitHub Copilot, etc.) write the summary instead of calling an LLM provider, use the `smart-diff-salesforce` skill from [`@mcarvin/smart-diff`](https://github.com/mcarvin8/smart-diff). Like this plugin, it limits the diff to the package directories in your `sfdx-project.json`.
+
+The skill does not support this plugin's `--reference-url` or `--release-notes` documentation retrieval. To give the agent that context, follow the steps in the [smart-diff examples](https://github.com/mcarvin8/smart-diff/tree/main/examples) to add it manually.
 
 ## Use cases
 
